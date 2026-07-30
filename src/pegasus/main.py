@@ -178,10 +178,12 @@ def cross_validate_list_matrix(
     if extra or missing:
         error_msg = "Mismatch in evidence columns between matrix and metadata files."
         details = []
+        # Sort on the string form: a stray non-string column name must not be
+        # able to raise a TypeError out of a validation run.
         if extra:
-            details.append(f"Matrix has extra evidence columns not in metadata: {sorted(extra)}")
+            details.append(f"Matrix has extra evidence columns not in metadata: {sorted(map(str, extra))}")
         if missing:
-            details.append(f"Metadata has extra evidence columns not in matrix: {sorted(missing)}")
+            details.append(f"Metadata has extra evidence columns not in matrix: {sorted(map(str, missing))}")
 
         results.append({
             "step": f"{step_num}/{total_steps} - Evidence Column Consistency",
@@ -198,24 +200,29 @@ def cross_validate_list_matrix(
 
     # Check 2: Author conclusion records exist in metadata
     step_num += 1
-    author_conclusion = metadata_validator.return_author_conclusion_rows()
-    if not author_conclusion:
+    try:
+        author_conclusion = metadata_validator.return_author_conclusion_rows()
+    except ValueError as exc:
+        # return_author_conclusion_rows raises unless there is exactly one such
+        # row. Report that as a validation result instead of letting the
+        # exception escape and kill the CLI.
         results.append({
             "step": f"{step_num}/{total_steps} - Author Conclusion Records",
             "type": "error",
-            "message": "No author conclusion records found in metadata.",
+            "message": str(exc),
         })
         return results
-    else:
-        results.append({
-            "step": f"{step_num}/{total_steps} - Author Conclusion Records",
-            "type": "info",
-            "message": f"Found {len(author_conclusion)} author conclusion record(s) in metadata.",
-        })
 
-    conclusion_column_names=author_conclusion[0]["column_header"]
-    conclusion_evidence_steams=author_conclusion[0]["evidence_streams_included"].split("|")
-    conclusion_int_tags=author_conclusion[0]["integrations_included"].split("|")
+    results.append({
+        "step": f"{step_num}/{total_steps} - Author Conclusion Records",
+        "type": "info",
+        "message": f"Found {len(author_conclusion)} author conclusion record(s) in metadata.",
+    })
+
+    conclusion_column_names = author_conclusion[0].get("column_header")
+    # A stream/tag consistency check belongs here eventually, reading
+    # evidence_streams_included and integrations_included off this row. Both
+    # fields are optional, so a blank cell means "no tags declared".
 
     # Check 3: Conclusion column exists in matrix file
     step_num += 1
@@ -589,16 +596,23 @@ def main() -> int:
         "input_path",
         type=Path,
         nargs="?",
-        help="Input file path (not required for schema-to-xlsx)",
+        help="Input file path. For schema-to-xlsx there is no input, so this is "
+             "treated as the output path instead.",
     )
-    
+
     convert_parser.add_argument(
         "output_path",
         type=Path,
         nargs="?",
         help="Output file path (optional, will print to stdout if not provided)",
     )
-    
+
+    convert_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output file if it already exists",
+    )
+
     args = parser.parse_args()
     
     # Handle conversion command
@@ -659,12 +673,19 @@ def handle_convert(args: argparse.Namespace) -> int:
                 return 1
         
         elif args.conversion_type == "schema-to-xlsx":
+            # There is no input for this conversion, so a lone positional is the
+            # destination. That makes it easy to name a file you meant to keep —
+            # refuse to clobber an existing one unless asked explicitly.
             output_path = args.output_path or args.input_path
             if not output_path:
                 console.print("[bold red]Error:[/bold red] Output Excel file path required for schema-to-xlsx")
                 return 1
+            if output_path.exists() and not getattr(args, "force", False):
+                console.print(f"[bold red]Error:[/bold red] Output file already exists: {output_path}")
+                console.print("[yellow]Pass --force to overwrite it.[/yellow]")
+                return 1
             args.output_path = output_path
-            
+
             console.print(f"[cyan]Generating Excel template from schema:[/cyan] {args.output_path}")
             from pegasus.template_convert.spreadsheet_builder import generate_excel_from_pydantic
             generate_excel_from_pydantic(args.output_path)

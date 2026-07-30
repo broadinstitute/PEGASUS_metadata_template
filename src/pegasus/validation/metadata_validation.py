@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import re
 import warnings
 from pathlib import Path
@@ -44,6 +45,20 @@ _FORMAT_ERROR_TYPES = frozenset({
     "union_tag_invalid",
     "value_error",
 })
+
+
+def _format_excel_datetime(value: datetime.datetime | datetime.date) -> str:
+    """Render an Excel date cell as a string.
+
+    Date-formatted cells come back as datetimes with a midnight time component;
+    those read better as a plain ISO date than as a full timestamp. pandas
+    Timestamps are datetime subclasses and so are covered here too.
+    """
+    if isinstance(value, datetime.datetime):
+        if (value.hour, value.minute, value.second, value.microsecond) == (0, 0, 0, 0):
+            return value.date().isoformat()
+        return value.isoformat()
+    return value.isoformat()
 
 
 class PegMetadataValidation:
@@ -217,6 +232,10 @@ class PegMetadataValidation:
                         record[field_name] = True
                     elif isinstance(value, str) and value.strip().lower() in ("false", "no"):
                         record[field_name] = False
+                    elif isinstance(value, (datetime.datetime, datetime.date)):
+                        # Excel date-formatted cells arrive as datetimes, which
+                        # would otherwise fail every string-typed field.
+                        record[field_name] = _format_excel_datetime(value)
                     elif isinstance(value, float) and value.is_integer():
                         # e.g. Excel reads 2019 as 2019.0 — keep as integer string
                         record[field_name] = str(int(value))
@@ -238,7 +257,10 @@ class PegMetadataValidation:
                 key_field = _SHEET_KEY_FIELDS.get(sheet_name)
                 key_value = record.get(key_field) if key_field else None
                 row_err: dict[str, Any] = {
-                    "row": int(idx) + 4,  # +1 for 0-index, +1 for header, +1 for example, +1 for 1-based
+                    # read_excel(header=1) puts index label 0 at spreadsheet row 3.
+                    # The iloc[1:] above drops the example row but preserves the
+                    # original labels, so this offset already accounts for it.
+                    "row": int(idx) + 3,
                 }
                 if key_value is not None:
                     row_err["key"] = f"{key_field}={key_value!r}"
@@ -301,22 +323,25 @@ class PegMetadataValidation:
         errors, a human-readable expected-format hint drawn from the schema example."""
         loc = list(e.get("loc", []))
         field_name = str(loc[0]) if loc else None
+        error_type = e.get("type", "")
         entry: dict[str, Any] = {
             # Show only the field name — union branch paths (e.g. 'function-wrap[wrap_val()]') add noise
             "loc": [loc[0]] if loc else loc,
             "msg": e.get("msg", ""),
-            # repr() makes hidden whitespace (spaces, tabs) visible in the output
-            "value": repr(e.get("input")),
         }
-        if field_name and e.get("type") in _FORMAT_ERROR_TYPES:
+        # For a missing field pydantic reports the whole row as the input, which
+        # would dump every cell into the message. The field name already says it.
+        if error_type != "missing":
+            # repr() makes hidden whitespace (spaces, tabs) visible in the output
+            entry["value"] = repr(e.get("input"))
+        if field_name and error_type in _FORMAT_ERROR_TYPES:
             example = field_examples.get(field_name)
             if example is not None:
                 entry["expected_example"] = str(example)
-        # Flag internal whitespace for any string that failed validation.
-        # This covers both string_pattern_mismatch (strict-format fields like GCST/PMID)
-        # and URL/union errors where whitespace is the true root cause.
-        # Exclude string_too_long — whitespace is not the issue there.
-        if e.get("type") != "string_too_long" and isinstance(e.get("input"), str):
+        # Only pattern-constrained fields (GCST, PMID, rsID, ...) forbid internal
+        # whitespace. Enum and Literal fields have legitimate values containing
+        # spaces — "Molecular QTL" — so the hint would be actively wrong there.
+        if error_type == "string_pattern_mismatch" and isinstance(e.get("input"), str):
             if re.search(r"\s", e["input"]):
                 example = field_examples.get(field_name) if field_name else None
                 example_str = f" The correct format for this field is e.g. '{example}'." if example else ""
@@ -340,14 +365,22 @@ class PegMetadataValidation:
         return df[mask]
 
     def cross_check_column_names(self) -> dict[str, list[str]]:
-        """Return the column names of a specific sheet."""
+        """Return the declared column names from the Evidence and Integration sheets.
+
+        Rows whose ``column_header`` is missing or blank are skipped. A workbook
+        can carry residue rows — cells left holding ``#REF!``, for instance —
+        that are non-empty enough to survive the empty-row filter but still
+        declare no column name. Letting those through puts ``None`` into the
+        caller's name sets, which cannot then be ordered against real names.
+        """
         headers: dict[str, list[str]] = {}
-        headers["Evidence"] = [column.get("column_header")
-                   for column in self.sheet_data.get("Evidence", {}).get("records", [])
-                   ]
-        headers["Integration"] = [column.get("column_header")
-                   for column in self.sheet_data.get("Integration", {}).get("records", [])
-                   ]
+        for sheet_name in ("Evidence", "Integration"):
+            names = []
+            for record in self.sheet_data.get(sheet_name, {}).get("records", []):
+                name = record.get("column_header")
+                if isinstance(name, str) and name.strip():
+                    names.append(name.strip())
+            headers[sheet_name] = names
         return headers
     
     def return_author_conclusion_rows(self) -> list[dict]:

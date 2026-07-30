@@ -17,7 +17,7 @@ BASE_HEADERS = [
     "GeneID",
     "GeneSymbol",
     "LocusRange",
-    "Locus_ID",
+    "LocusID",
     "GWAS_pvalue",
     "QTL_eqtl_pvalue",
     "INT_score",
@@ -61,6 +61,21 @@ class TestMatrixCatalogValidation(unittest.TestCase):
             tsv_path = _write_tmp(Path(tmp_dir), "matrix_success.tsv", content)
             results = PegMatrixValidation(tsv_path).validate_pegmatrix()
         self.assertFalse(_has_type(results, "error"))
+
+    def test_locus_id_is_a_genetic_identifier(self) -> None:
+        """LocusID must classify as an identifier, not fall through to "other".
+
+        The schema field was renamed from Locus_ID to LocusID. The old spelling
+        still matched the "Locus_" prefix and landed in other_identifiers, so the
+        renamed field was never actually exercised.
+        """
+        content = _build_tsv(BASE_HEADERS, BASE_ROW)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_locus_id.tsv", content)
+            classified = PegMatrixValidation(tsv_path).classify_headers()
+
+        self.assertIn("LocusID", classified["genetic"])
+        self.assertNotIn("LocusID", classified["other"])
 
     def test_missing_variant_id(self) -> None:
         headers = BASE_HEADERS.copy()
