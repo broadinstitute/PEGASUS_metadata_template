@@ -239,9 +239,7 @@ def cross_validate_list_matrix(
             "message": f"Conclusion column '{conclusion_column_names}' found in matrix file.",
         })
 
-    # Check 4: Every list selection is supported by a positive conclusion in
-    # the matrix. The conclusion is matrix-level information and does not need
-    # to be duplicated in the list.
+    # Check 4: The list must copy the matrix conclusion for every selected row.
     step_num += 1
     selection_step = f"{step_num}/{total_steps} - List Rows Match Positive Matrix Conclusions"
     if conclusion_column_names not in all_matrix_headers:
@@ -258,7 +256,19 @@ def cross_validate_list_matrix(
     with matrix_file.open(newline="", encoding="utf-8-sig") as handle:
         matrix_rows = list(csv.DictReader(handle, delimiter="\t"))
     with list_file.open(newline="", encoding="utf-8-sig") as handle:
-        selected_rows = list(csv.DictReader(handle, delimiter="\t"))
+        list_reader = csv.DictReader(handle, delimiter="\t")
+        list_headers = list_reader.fieldnames or []
+        selected_rows = list(list_reader)
+
+    if conclusion_column_names not in list_headers:
+        results.append({
+            "step": selection_step,
+            "type": "error",
+            "message": (
+                f"Conclusion column '{conclusion_column_names}' not found in list file."
+            ),
+        })
+        return results
 
     conclusions_by_key: dict[tuple[str, str], list[str]] = {}
     for row in matrix_rows:
@@ -273,6 +283,7 @@ def cross_validate_list_matrix(
     false_like_values = {"", "NA", "N/A", "NONE", "-", "FALSE", "0", "N", "NO"}
     missing_keys: list[str] = []
     non_positive_keys: list[str] = []
+    mismatched_keys: list[str] = []
     for row in selected_rows:
         key = (
             (row.get("PrimaryVariantID") or "").strip(),
@@ -282,10 +293,18 @@ def cross_validate_list_matrix(
         display_key = f"{key[0]} / {key[1]}"
         if values is None:
             missing_keys.append(display_key)
-        elif not any(value.upper() not in false_like_values for value in values):
-            non_positive_keys.append(display_key)
+            continue
 
-    if missing_keys or non_positive_keys:
+        positive_values = {
+            value.upper() for value in values
+            if value.upper() not in false_like_values
+        }
+        if not positive_values:
+            non_positive_keys.append(display_key)
+        elif (row.get(conclusion_column_names) or "").strip().upper() not in positive_values:
+            mismatched_keys.append(display_key)
+
+    if missing_keys or non_positive_keys or mismatched_keys:
         details = []
         if missing_keys:
             details.append(f"List rows missing from matrix: {missing_keys}")
@@ -294,10 +313,15 @@ def cross_validate_list_matrix(
                 f"List rows without a positive '{conclusion_column_names}' value: "
                 f"{non_positive_keys}"
             )
+        if mismatched_keys:
+            details.append(
+                f"List rows whose '{conclusion_column_names}' value does not match "
+                f"the matrix: {mismatched_keys}"
+            )
         results.append({
             "step": selection_step,
             "type": "error",
-            "message": "One or more list rows are not supported by a positive matrix conclusion.",
+            "message": "One or more list rows do not match a positive matrix conclusion.",
             "details": details,
         })
     else:
@@ -305,7 +329,7 @@ def cross_validate_list_matrix(
             "step": selection_step,
             "type": "info",
             "message": (
-                f"All {len(selected_rows)} list row(s) map to matrix rows with a positive "
+                f"All {len(selected_rows)} list row(s) copy a positive matrix "
                 f"'{conclusion_column_names}' value."
             ),
         })

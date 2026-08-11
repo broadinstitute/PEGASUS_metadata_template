@@ -73,7 +73,12 @@ class TestAragamRealDataConsistency(unittest.TestCase):
                 sum(truthy(selected[field]) for field in mapping),
                 key,
             )
-            self.assertNotIn("INT_author_conclusion", selected)
+            self.assertEqual(
+                selected["INT_author_conclusion"].strip().upper(),
+                matrix["INT_author_conclusion"].strip().upper(),
+                key,
+            )
+            self.assertEqual(selected["INT_author_conclusion"].strip().upper(), "YES", key)
             self.assertTrue(truthy(matrix["INT_author_conclusion"]), key)
 
     def test_reported_pcsk9_qtl_error_is_corrected(self) -> None:

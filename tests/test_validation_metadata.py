@@ -530,7 +530,7 @@ def _write_companion_tsvs(tmp_path: Path, stem: str) -> tuple[Path, Path]:
 
 
 class TestAuthorConclusionSelection(unittest.TestCase):
-    """The list selects positive matrix conclusions without duplicating them."""
+    """The list copies positive author conclusions from matching matrix rows."""
 
     def _cross_validate(self, matrix_rows: str, list_rows: str) -> list[dict]:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -545,7 +545,7 @@ class TestAuthorConclusionSelection(unittest.TestCase):
             )
             list_file = tmp_path / "list_selection.tsv"
             list_file.write_text(
-                "PrimaryVariantID\tGeneSymbol\tGWAS\n" + list_rows,
+                "PrimaryVariantID\tGeneSymbol\tGWAS\tINT2\n" + list_rows,
                 encoding="utf-8",
             )
             matrix_file = tmp_path / "matrix_selection.tsv"
@@ -566,18 +566,54 @@ class TestAuthorConclusionSelection(unittest.TestCase):
             raise AssertionError(f"expected one list-selection result, got: {results}")
         return matching[0]
 
-    def test_list_does_not_need_author_conclusion_column(self) -> None:
+    def test_matching_author_conclusion_is_accepted(self) -> None:
         results = self._cross_validate(
             "chr1:100000:A:G\tVTI1A\tTRUE\tTRUE\tTRUE\tTRUE\tSTRONG\tTRUE\n",
-            "chr1:100000:A:G\tVTI1A\tTRUE\n",
+            "chr1:100000:A:G\tVTI1A\tTRUE\tSTRONG\n",
         )
 
         self.assertEqual(self._selection_result(results)["type"], "info")
 
+    def test_missing_author_conclusion_column_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            metadata_file = tmp_path / "metadata_selection.xlsx"
+            _write_metadata_excel(
+                metadata_file,
+                evidence_rows=_valid_evidence_rows(3),
+                integration_rows=_valid_integration_rows(3, author_conclusion_index=1),
+                source_rows=[{}, {"source_tag": "source_ok"}],
+                method_rows=[{}, {"method_tag": "method_ok"}],
+            )
+            list_file = tmp_path / "list_selection.tsv"
+            list_file.write_text(
+                "PrimaryVariantID\tGeneSymbol\tGWAS\n"
+                "chr1:100000:A:G\tVTI1A\tTRUE\n",
+                encoding="utf-8",
+            )
+            matrix_file = tmp_path / "matrix_selection.tsv"
+            matrix_file.write_text(
+                "PrimaryVariantID\tGeneSymbol\tEV1\tEV2\tEV3\tINT1\tINT2\tINT3\n"
+                "chr1:100000:A:G\tVTI1A\tTRUE\tTRUE\tTRUE\tTRUE\tSTRONG\tTRUE\n",
+                encoding="utf-8",
+            )
+
+            results = cross_validate_list_matrix(list_file, matrix_file, metadata_file)
+
+        self.assertEqual(self._selection_result(results)["type"], "error")
+
+    def test_mismatched_author_conclusion_is_rejected(self) -> None:
+        results = self._cross_validate(
+            "chr1:100000:A:G\tVTI1A\tTRUE\tTRUE\tTRUE\tTRUE\tSTRONG\tTRUE\n",
+            "chr1:100000:A:G\tVTI1A\tTRUE\tMODERATE\n",
+        )
+
+        self.assertEqual(self._selection_result(results)["type"], "error")
+
     def test_negative_matrix_conclusion_is_rejected(self) -> None:
         results = self._cross_validate(
             "chr1:100000:A:G\tVTI1A\tTRUE\tTRUE\tTRUE\tTRUE\tNO\tTRUE\n",
-            "chr1:100000:A:G\tVTI1A\tTRUE\n",
+            "chr1:100000:A:G\tVTI1A\tTRUE\tNO\n",
         )
 
         self.assertEqual(self._selection_result(results)["type"], "error")
@@ -585,7 +621,7 @@ class TestAuthorConclusionSelection(unittest.TestCase):
     def test_list_pair_missing_from_matrix_is_rejected(self) -> None:
         results = self._cross_validate(
             "chr1:100000:A:G\tVTI1A\tTRUE\tTRUE\tTRUE\tTRUE\tSTRONG\tTRUE\n",
-            "chr1:200000:A:G\tOTHER\tTRUE\n",
+            "chr1:200000:A:G\tOTHER\tTRUE\tSTRONG\n",
         )
 
         self.assertEqual(self._selection_result(results)["type"], "error")

@@ -76,8 +76,8 @@ Cross-sheet rules:
 - Cross-checks include:
   - Matrix evidence columns must match the combined Evidence + Integration columns from metadata.
   - Metadata must include an `author_conclusion = TRUE` row.
-  - The metadata conclusion column must exist in the matrix, but it is not duplicated in the list.
-  - Every list `PrimaryVariantID` + `GeneSymbol` pair must match a matrix row with a positive conclusion value. Blank, `NA`, `N/A`, `NONE`, `-`, `FALSE`, `0`, `N`, and `NO` are treated as non-positive.
+  - The metadata conclusion column must exist in both the matrix and the list.
+  - Every list `PrimaryVariantID` + `GeneSymbol` pair must match a matrix row and copy its positive conclusion value. Blank, `NA`, `N/A`, `NONE`, `-`, `FALSE`, `0`, `N`, and `NO` are treated as non-positive.
 
 ## Notes / gaps to address later
 - Metadata validator is wired and enforces per-sheet + cross-sheet rules.
