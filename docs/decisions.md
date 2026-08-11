@@ -17,7 +17,7 @@ Header checks:
 - At least **two** evidence columns are required.
 
 Fixed-column checks (Pandera, `MatrixIdentifiesPandera`):
-- `PrimaryVariantID`: required, `[chr]<1-22|X|Y|M|MT>:pos:REF:ALT` regex; the literal `chr` prefix is optional, while colon separators remain mandatory.
+- `PrimaryVariantID`: required, optional literal `chr` prefix followed by a required chromosome (`1-22`, `X`, `Y`, `M`, or `MT`), then `:pos:REF:ALT`; colon separators remain mandatory.
 - `rsID`: optional, `rs<digits>` regex.
 - `GeneID`: required (no regex; must be non-null string).
 - `GeneSymbol`: required and must start with a letter; valid HGNC-style mixed-case symbols, internal hyphens, and periods are accepted (for example `C1orf54` and `RP11-378J18.8`).
@@ -38,7 +38,7 @@ Header checks:
 - Unrecognized columns are allowed but reported as warnings and skipped in row validation.
 
 Row checks (Pydantic, `PegListSchema` + `ListIdentifiers`):
-- `PrimaryVariantID`: must match `[chr]chromosome:position:REF:ALT`; both `10:114754071:T:C` and `chr10:114754071:T:C` are valid, while mixed separators are invalid.
+- `PrimaryVariantID`: accepts an optional literal `chr` prefix followed by a required chromosome, position, REF, and ALT; both `10:114754071:T:C` and `chr10:114754071:T:C` are valid, while a missing chromosome or mixed separators are invalid.
 - `GeneSymbol`: must be a non-numeric string.
 - Evidence columns: values must parse to **boolean** (`TRUE`/`FALSE` or actual bool).
 - Integration columns: accepted as strings (no strict validation yet).

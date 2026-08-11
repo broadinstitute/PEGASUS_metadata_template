@@ -155,6 +155,16 @@ class TestMatrixCatalogValidation(unittest.TestCase):
         self.assertTrue(_has_type(results, "error"))
         self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
 
+    def test_invalid_variantid_without_chromosome(self) -> None:
+        row = BASE_ROW.copy()
+        row[BASE_HEADERS.index("PrimaryVariantID")] = ":100000:A:G"
+        content = _build_tsv(BASE_HEADERS, row)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_missing_chromosome.tsv", content)
+            results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+        self.assertTrue(_has_type(results, "error"))
+        self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
+
     def test_invalid_rsid(self) -> None:
         row = BASE_ROW.copy()
         row[BASE_HEADERS.index("rsID")] = "1234"

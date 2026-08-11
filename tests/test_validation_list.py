@@ -102,6 +102,16 @@ class TestListValidation(unittest.TestCase):
             results = PegListValidation(tsv_path).validate_peglist()
             self.assertTrue(_has_type(results, "error"))
 
+    def test_invalid_variantid_without_chromosome(self) -> None:
+        content = (
+            "PrimaryVariantID\tGeneSymbol\tGWAS\tFUNC\tQTL\tEXP\tPERTURB\tINT_Combined_score\n"
+            ":100000:A:G\tVTI1A\tTRUE\tFALSE\tTRUE\tFALSE\tTRUE\tSTRONG\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = self._write_tmp(Path(tmp_dir), "missing_chromosome.tsv", content)
+            results = PegListValidation(tsv_path).validate_peglist()
+            self.assertTrue(_has_type(results, "error"))
+
     def test_invalid_genesymbol(self) -> None:
         content = (
             "PrimaryVariantID\tGeneSymbol\tGWAS\tFUNC\tQTL\tEXP\tPERTURB\tINT_Combined_score\n"
