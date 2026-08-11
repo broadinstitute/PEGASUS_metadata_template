@@ -1,4 +1,4 @@
-PrimaryVariantID	rsID	GeneID	GeneSymbol	LocusRange	Locus_ID	GWAS_pvalue	FUNC_CADD	QTL_eQTL_aorta_pvalue	EXP_aorta_RPKM	PERTURB_mouse	INT_pops	INT_author_score
+PrimaryVariantID	rsID	GeneID	GeneSymbol	LocusRange	LocusID	GWAS_pvalue	FUNC_CADD	QTL_eQTL_aorta_pvalue	EXP_aorta_RPKM	PERTURB_mouse	INT_pops	INT_author_score
 chr1:100000:G:C	rs1234	ENSG00000000001	BRCA1	chr1:99500-115000	rs1234	4.00E-09	18.2	7.00E-07	8.7	enlarged heart | increased heart weight	10	STRONG
 chr1:100000:T:C	rs1234	ENSG00000000002	BRCA2	chr1:99500-115000	rs1234	4.00E-09	3.45	0.01	NA	NA	3	WEAK
 chr1:100000:T:C	rs1234	ENSG00000000003	EGFR	chr1:99500-115000	rs1234	4.00E-09	6.4	0.05	NA	NA	1	WEAK

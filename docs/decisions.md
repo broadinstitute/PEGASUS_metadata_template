@@ -22,7 +22,7 @@ Fixed-column checks (Pandera, `MatrixIdentifiesPandera`):
 - `GeneID`: required (no regex; must be non-null string).
 - `GeneSymbol`: required and must start with a letter; valid HGNC-style mixed-case symbols, internal hyphens, and periods are accepted (for example `C1orf54` and `RP11-378J18.8`).
 - `LocusRange`: optional, `chr<1-22|X|Y|M|MT>:start-end` regex.
-- `Locus_ID`: optional (no regex).
+- `LocusID`: optional (no regex).
 
 Validation strategy:
 - Fixed columns are validated in chunks (first 50k rows, then remaining).
