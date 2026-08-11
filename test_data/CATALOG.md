@@ -58,4 +58,5 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | success| cross | success| success example - toy data|
 | missing_file | cross | failed | missing list file |
 | missing_column_in_metadata | cross | failed | one column in the matrix is missed in metadata evidence tab |
-| missing_conclusion_column | cross | failed | author conclusion column in the metadata is missing in list file |
+| list_without_conclusion_column | cross | success | the list does not duplicate the matrix author-conclusion column |
+| list_row_with_negative_conclusion | cross | failed | a listed variant-gene pair has no positive author conclusion in the matrix |

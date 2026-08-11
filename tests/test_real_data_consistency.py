@@ -73,7 +73,8 @@ class TestAragamRealDataConsistency(unittest.TestCase):
                 sum(truthy(selected[field]) for field in mapping),
                 key,
             )
-            self.assertEqual(selected["INT_author_conclusion"], matrix["INT_author_conclusion"])
+            self.assertNotIn("INT_author_conclusion", selected)
+            self.assertTrue(truthy(matrix["INT_author_conclusion"]), key)
 
     def test_reported_pcsk9_qtl_error_is_corrected(self) -> None:
         row = next(row for row in self.peg_list if row["GeneSymbol"] == "PCSK9")

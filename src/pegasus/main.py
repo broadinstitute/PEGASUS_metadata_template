@@ -9,6 +9,7 @@ and conversion between Excel, JSON, and YAML formats.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from pathlib import Path
@@ -149,7 +150,6 @@ def cross_validate_list_matrix(
     step_num = 0
     total_steps = 4  # Total number of cross-validation checks
 
-    list_validator = PegListValidation(list_file)
     matrix_validator = PegMatrixValidation(matrix_file)
     if metadata_file is None:
         results.append({
@@ -162,7 +162,6 @@ def cross_validate_list_matrix(
     metadata_validator = PegMetadataValidation(metadata_file)
     metadata_validator.validate_metadata()
 
-    list_columns = list_validator.classify_headers()
     matrix_columns = matrix_validator.classify_headers()
 
     # Check 1: Evidence column consistency between matrix and metadata
@@ -240,20 +239,75 @@ def cross_validate_list_matrix(
             "message": f"Conclusion column '{conclusion_column_names}' found in matrix file.",
         })
 
-    # Check 4: Conclusion column exists in list file
+    # Check 4: Every list selection is supported by a positive conclusion in
+    # the matrix. The conclusion is matrix-level information and does not need
+    # to be duplicated in the list.
     step_num += 1
-    all_list_headers = [h for headers in list_columns.values() for h in headers]
-    if conclusion_column_names not in all_list_headers:
+    selection_step = f"{step_num}/{total_steps} - List Rows Match Positive Matrix Conclusions"
+    if conclusion_column_names not in all_matrix_headers:
         results.append({
-            "step": f"{step_num}/{total_steps} - Conclusion Column in List",
+            "step": selection_step,
             "type": "error",
-            "message": f"Conclusion column '{conclusion_column_names}' not found in list file.",
+            "message": (
+                "List selections cannot be checked because the matrix conclusion "
+                f"column '{conclusion_column_names}' is missing."
+            ),
+        })
+        return results
+
+    with matrix_file.open(newline="", encoding="utf-8-sig") as handle:
+        matrix_rows = list(csv.DictReader(handle, delimiter="\t"))
+    with list_file.open(newline="", encoding="utf-8-sig") as handle:
+        selected_rows = list(csv.DictReader(handle, delimiter="\t"))
+
+    conclusions_by_key: dict[tuple[str, str], list[str]] = {}
+    for row in matrix_rows:
+        key = (
+            (row.get("PrimaryVariantID") or "").strip(),
+            (row.get("GeneSymbol") or "").strip(),
+        )
+        conclusions_by_key.setdefault(key, []).append(
+            (row.get(conclusion_column_names) or "").strip()
+        )
+
+    false_like_values = {"", "NA", "N/A", "NONE", "-", "FALSE", "0", "N", "NO"}
+    missing_keys: list[str] = []
+    non_positive_keys: list[str] = []
+    for row in selected_rows:
+        key = (
+            (row.get("PrimaryVariantID") or "").strip(),
+            (row.get("GeneSymbol") or "").strip(),
+        )
+        values = conclusions_by_key.get(key)
+        display_key = f"{key[0]} / {key[1]}"
+        if values is None:
+            missing_keys.append(display_key)
+        elif not any(value.upper() not in false_like_values for value in values):
+            non_positive_keys.append(display_key)
+
+    if missing_keys or non_positive_keys:
+        details = []
+        if missing_keys:
+            details.append(f"List rows missing from matrix: {missing_keys}")
+        if non_positive_keys:
+            details.append(
+                f"List rows without a positive '{conclusion_column_names}' value: "
+                f"{non_positive_keys}"
+            )
+        results.append({
+            "step": selection_step,
+            "type": "error",
+            "message": "One or more list rows are not supported by a positive matrix conclusion.",
+            "details": details,
         })
     else:
         results.append({
-            "step": f"{step_num}/{total_steps} - Conclusion Column in List",
+            "step": selection_step,
             "type": "info",
-            "message": f"Conclusion column '{conclusion_column_names}' found in list file.",
+            "message": (
+                f"All {len(selected_rows)} list row(s) map to matrix rows with a positive "
+                f"'{conclusion_column_names}' value."
+            ),
         })
 
     return results
