@@ -376,7 +376,7 @@ class PegMetadataValidation:
         headers: dict[str, list[str]] = {}
         for sheet_name in ("Evidence", "Integration"):
             names = []
-            for record in self.sheet_data.get(sheet_name, {}).get("records", []):
+            for record in self.sheet_data.get(sheet_name, {}).get("valid_records", []):
                 name = record.get("column_header")
                 if isinstance(name, str) and name.strip():
                     names.append(name.strip())
@@ -385,7 +385,7 @@ class PegMetadataValidation:
     
     def return_author_conclusion_rows(self) -> list[dict]:
         """Return rows with author_conclusion=TRUE in Integration sheet."""
-        integration_data = self.sheet_data.get("Integration", {}).get("records", [])
+        integration_data = self.sheet_data.get("Integration", {}).get("valid_records", [])
         author_conclusion_rows = [
             row for row in integration_data if row.get("author_conclusion") is True
         ]

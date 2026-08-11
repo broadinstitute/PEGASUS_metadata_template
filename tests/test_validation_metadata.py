@@ -567,6 +567,11 @@ class TestAuthorConclusionCountReporting(unittest.TestCase):
         rows[2]["author_conclusion"] = True
         self._assert_reported(rows)
 
+    def test_invalid_author_conclusion_row_is_not_counted(self) -> None:
+        rows = _valid_integration_rows(3, author_conclusion_index=1)
+        rows[1]["method_tag"] = None
+        self._assert_reported(rows)
+
 
 class TestReportedRowNumbers(unittest.TestCase):
     """A reported row number must point at the row the curator sees in Excel."""

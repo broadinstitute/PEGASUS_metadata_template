@@ -1,3 +1,4 @@
+import argparse
 import sys
 import tempfile
 import unittest
@@ -7,6 +8,7 @@ repo_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo_root / "src"))
 
 from pegasus.validation.list_validation import PegListValidation
+from pegasus.main import handle_validate
 
 
 def _has_type(results, kind: str) -> bool:
@@ -27,6 +29,27 @@ class TestListValidation(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             tsv_path = self._write_tmp(Path(tmp_dir), "success.tsv", content)
+            results = PegListValidation(tsv_path).validate_peglist()
+            self.assertFalse(_has_type(results, "error"))
+
+    def test_success_without_chr_prefix(self) -> None:
+        content = (
+            "PrimaryVariantID\tGeneSymbol\tGWAS\tFUNC\tQTL\tEXP\tPERTURB\tINT_Combined_score\n"
+            "1:100000:A:G\tVTI1A\tTRUE\tFALSE\tTRUE\tFALSE\tTRUE\tSTRONG\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = self._write_tmp(Path(tmp_dir), "success_without_chr.tsv", content)
+            results = PegListValidation(tsv_path).validate_peglist()
+            self.assertFalse(_has_type(results, "error"))
+
+    def test_success_with_valid_mixed_case_and_dotted_gene_symbols(self) -> None:
+        content = (
+            "PrimaryVariantID\tGeneSymbol\tGWAS\tFUNC\tQTL\tEXP\tPERTURB\tINT_Combined_score\n"
+            "1:100000:A:G\tC1orf54\tTRUE\tFALSE\tTRUE\tFALSE\tTRUE\tSTRONG\n"
+            "1:100001:A:G\tRP11-378J18.8\tTRUE\tFALSE\tTRUE\tFALSE\tTRUE\tSTRONG\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = self._write_tmp(Path(tmp_dir), "valid_gene_symbols.tsv", content)
             results = PegListValidation(tsv_path).validate_peglist()
             self.assertFalse(_has_type(results, "error"))
 
@@ -68,6 +91,16 @@ class TestListValidation(unittest.TestCase):
             self.assertTrue(
                 any(r.get("step") == "2/2 - Row Validation" for r in results)
             )
+
+    def test_invalid_variantid_with_mixed_separators(self) -> None:
+        content = (
+            "PrimaryVariantID\tGeneSymbol\tGWAS\tFUNC\tQTL\tEXP\tPERTURB\tINT_Combined_score\n"
+            "1:100000_A_G\tVTI1A\tTRUE\tFALSE\tTRUE\tFALSE\tTRUE\tSTRONG\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = self._write_tmp(Path(tmp_dir), "mixed_separators.tsv", content)
+            results = PegListValidation(tsv_path).validate_peglist()
+            self.assertTrue(_has_type(results, "error"))
 
     def test_invalid_genesymbol(self) -> None:
         content = (
@@ -113,7 +146,8 @@ class TestListValidation(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tsv_path = self._write_tmp(Path(tmp_dir), "invalid_contains_other_column.tsv", content)
             results = PegListValidation(tsv_path).validate_peglist()
-            self.assertTrue(_has_type(results, "error"))
+            self.assertTrue(_has_type(results, "warning"))
+            self.assertFalse(_has_type(results, "error"))
 
     def test_invalid_value(self) -> None:
         content = (
@@ -134,8 +168,15 @@ class TestListValidation(unittest.TestCase):
             tmp_path = Path(tmp_dir)
             self._write_tmp(tmp_path, "list_a.tsv", content)
             self._write_tmp(tmp_path, "list_b.tsv", content)
-            results = PegListValidation(tmp_path / "list_a.tsv").validate_peglist()
-            self.assertTrue(_has_type(results, "error"))
+            args = argparse.Namespace(
+                file_path=tmp_path,
+                type="list",
+                format="json",
+                progress=False,
+                error_limit=50,
+            )
+            exit_code = handle_validate(args)
+            self.assertEqual(exit_code, 1)
 
 
 if __name__ == "__main__":

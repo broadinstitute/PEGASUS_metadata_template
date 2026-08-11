@@ -17,10 +17,10 @@ Header checks:
 - At least **two** evidence columns are required.
 
 Fixed-column checks (Pandera, `MatrixIdentifiesPandera`):
-- `PrimaryVariantID`: required, `chr<1-22|X|Y|M|MT>:pos:REF:ALT` regex.
+- `PrimaryVariantID`: required, `[chr]<1-22|X|Y|M|MT>:pos:REF:ALT` regex; the literal `chr` prefix is optional, while colon separators remain mandatory.
 - `rsID`: optional, `rs<digits>` regex.
 - `GeneID`: required (no regex; must be non-null string).
-- `GeneSymbol`: required, must be a real Python `str` and **not purely numeric**.
+- `GeneSymbol`: required and must start with a letter; valid HGNC-style mixed-case symbols, internal hyphens, and periods are accepted (for example `C1orf54` and `RP11-378J18.8`).
 - `LocusRange`: optional, `chr<1-22|X|Y|M|MT>:start-end` regex.
 - `Locus_ID`: optional (no regex).
 
@@ -38,7 +38,7 @@ Header checks:
 - Unrecognized columns are allowed but reported as warnings and skipped in row validation.
 
 Row checks (Pydantic, `PegListSchema` + `ListIdentifiers`):
-- `PrimaryVariantID`: must match `chr:pos:ref:alt` regex (note: error text mentions rsID, but current validator only accepts chr-formatted IDs).
+- `PrimaryVariantID`: must match `[chr]chromosome:position:REF:ALT`; both `10:114754071:T:C` and `chr10:114754071:T:C` are valid, while mixed separators are invalid.
 - `GeneSymbol`: must be a non-numeric string.
 - Evidence columns: values must parse to **boolean** (`TRUE`/`FALSE` or actual bool).
 - Integration columns: accepted as strings (no strict validation yet).
@@ -80,8 +80,8 @@ Cross-sheet rules:
 
 ## Notes / gaps to address later
 - Metadata validator is wired and enforces per-sheet + cross-sheet rules.
-- Matrix header validation currently stops on any unknown header (warning + early return).
-- PEG list PrimaryVariantID validator only accepts chr:pos:ref:alt even though message mentions rsID.
+- Unknown matrix headers produce warnings and are ignored, while recognized columns continue through row validation.
+- PEG list and matrix PrimaryVariantID validators accept the same colon-delimited format with an optional `chr` prefix.
 
 ## Where the schema lives
 - `src/pegasus/schema/core.py`
