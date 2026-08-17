@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
-from enum import Enum
-from typing import Annotated, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from schema_defintation.control_verb import Text, LongText, Identifier, ShortText
+from pegasus.schema.core import Text, LongText, Identifier, ShortText
 
 # ----------------------------
 # Sheet: Method
@@ -63,6 +61,6 @@ class Method(BaseModel):
     )
     note: Optional[LongText] = Field(
         default=None,
-        description="Detailed description of the method, workflow, or customisation applied.",                                
+        description="Additional free text clarifications to aid interpretation.",
         json_schema_extra={"header": "note", "example": ""}
     )

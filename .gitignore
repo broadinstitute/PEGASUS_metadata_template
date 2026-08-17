@@ -1,4 +1,10 @@
-# Python
+# macOS
+.DS_Store
+
+# Microsoft Office temporary lock files
+~$*.xlsx
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *.pyo
@@ -27,5 +33,7 @@ htmlcov/
 *.swp
 *~
 
-# Misc
-.DS_Store
+# Generated output files from pegasus_tool
+output.json
+output.yaml
+generated_template.xlsx

@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl, StringConstraints
-from schema_defintation.control_verb import Text, LongText, Identifier, ShortText
+from pegasus.schema.core import Text, LongText, Identifier, ShortText
 
 # ----------------------------
 # Sheet: Integration
@@ -40,13 +40,13 @@ class Integration(BaseModel):
     )
 
     evidence_streams_included: Optional[LongText] = Field(
-        ...,        
+        default=None,
         description="A list of variant-centric or gene-centric evidence stream names combined in the integration.",
         json_schema_extra={"header": "evidence_streams_included", "example": "FUNC | eQTL | pQTL | FM | 3d |PHEWAS |TWAS"}
     )
 
     integrations_included: Optional[LongText] = Field(
-        ...,        
+        default=None,
         description="A list of integration_tag values from other integration analyses that are included in this integration analysis",
         json_schema_extra={"header": "integrations_included", "example": "pops | flames"}
     )
@@ -57,14 +57,14 @@ class Integration(BaseModel):
         json_schema_extra={"header": "method_tag", "example": "soft_pops"}
     )
 
-    threshold: Optional[float] = Field(
-        ...,        
+    threshold: Optional[ShortText] = Field(
+        default=None,        
         description="Threshold applied to define significance or inclusion criteria.",
         json_schema_extra={"header": "threshold", "example": "0.05"}
     )
 
-    notes: Optional[LongText] = Field(
-        ...,        
+    note: Optional[LongText] = Field(
+        default=None,        
         description="Extra details to aid interpretation.",
-        json_schema_extra={"header": "notes", "example": ""}
+        json_schema_extra={"header": "note", "example": ""}
     )

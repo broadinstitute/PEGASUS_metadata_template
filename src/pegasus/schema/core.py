@@ -1,8 +1,17 @@
 from __future__ import annotations
-from typing import Annotated, Union
-from pydantic import StringConstraints
-from typing import Annotated
+from typing import Annotated, Optional, Union
 from enum import Enum
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
+
+# Variant_id, rsid, GeneId, GeneSymbol, LocusRange, LocusId, and evidence categories are reusuable models (PEG matrix and PEG list)
 
 # ----------------------------
 # Shared helpers
@@ -16,7 +25,12 @@ Identifier = Annotated[str, StringConstraints(strip_whitespace=True, max_length=
 # In JSON/TSV parsing accept true/false/1/0 separately if needed.
 
 # ----------------------------
-# Controlled Identifiers
+# Controlled variant/gene Identifiers
+# ----------------------------
+
+
+# ----------------------------
+# Controlled Ontology Identifiers
 # ----------------------------
 OntologyUnderscoreID = Annotated[
     str,
@@ -31,8 +45,8 @@ NCBITAXON_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r
 PATO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PATO[:_]\d+$", max_length=128)]
 ECO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^ECO[:_]\d+$", max_length=128)]
 
-PMID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PMID:\d+$", max_length=32)]
-DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10.\d{4,9}/[-._;()/:A-Z0-9]+$", max_length=128)]
+PMID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PMID:\s*\d+$", max_length=32)]
+DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10\.\d{4,9}/[-._;()/:A-Za-z0-9]+$", max_length=128)]
 GCST = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^GCST\d+$", max_length=32)]
 RSID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^rs\d+$", max_length=32)]
 
@@ -53,7 +67,6 @@ class DiseaseStatus(str, Enum):
     healthy = "healthy"
     disease = "disease"
 
-
 class SexComposition(str, Enum):
     male = "male"
     female = "female"
@@ -63,7 +76,7 @@ class SexComposition(str, Enum):
 class VariantEvidenceCategory(str, Enum):
     # Use controlled list here (examples only)
     LD = "Linkage disequilibrium"
-    FINEMAP = "Finemapping and credible sets"
+    FM = "Finemapping and credible sets"
     COLOC = "Colocalisation"
     QTL = "Molecular QTL"
     MR = "Mendelian Randomization (MR)"
@@ -88,12 +101,45 @@ class AnyEvidenceCategory(str, Enum):
     CROSSP = "Cross-phenotype"
     LIT = "Literature curation"
     DB = "Association from curated database"
+    OTHER = "Other"
 
 EvidenceCategory = Union[
     VariantEvidenceCategory,
     GeneEvidenceCategory,
     AnyEvidenceCategory,
 ]
+
+# Evidence category mapping (abbreviation -> full name)
+EVIDENCE_CATEGORY_MAP: dict[str, str] = {
+    member.name: member.value
+    for enum_cls in (VariantEvidenceCategory, GeneEvidenceCategory, AnyEvidenceCategory)
+    for member in enum_cls
+}
+
+class EvidenceCategoryAbbreviation(str, Enum):
+    LD = "LD"
+    FM = "FM"
+    COLOC = "COLOC"
+    QTL = "QTL"
+    MR = "MR"
+    REG = "REG"
+    CHROMATIN = "CHROMATIN"
+    FUNC = "FUNC"
+    PROX = "PROX"
+    GWAS = "GWAS"
+    PHEWAS = "PHEWAS"
+    PPI = "PPI"
+    SET = "SET"
+    GENEBASE = "GENEBASE"
+    EXP = "EXP"
+    PERTURB = "PERTURB"
+    KNOW = "KNOW"
+    TPWAS = "TPWAS"
+    DRUG = "DRUG"
+    CROSSP = "CROSSP"
+    LIT = "LIT"
+    DB = "DB"
+    OTHER = "OTHER"
 
 class AncestryCategory(str, Enum):
     ABORIGINAL_AUSTRALIAN = "Aboriginal Australian"

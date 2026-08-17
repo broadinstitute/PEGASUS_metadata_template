@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from schema_defintation.control_verb import (
+from pegasus.schema.core import (
     DiseaseStatus,
     Identifier,
     LongText,
@@ -26,6 +26,7 @@ class Source(BaseModel):
         description="Unique identifier for the source.",
         json_schema_extra={"header": "source_tag", "example": "source_gtex_aorta"},
     )
+    
     provenance: Optional[Identifier] = Field(
         default=None,
         description=(
@@ -36,33 +37,44 @@ class Source(BaseModel):
         ),
         json_schema_extra={"header": "provenance", "example": "GTEx"},
     )
+
     file_name: Optional[ShortText] = Field(
         default=None,
         description="Exact filename of the source dataset.",
         json_schema_extra={"header": "file_name", "example": "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct.gz"},
     )
+
     version: Optional[ShortText] = Field(
         default=None,
         description="Version or release of the dataset.",
         json_schema_extra={"header": "version", "example": "v8"},
     )
+    
     url: Optional[HttpUrl] = Field(
         default=None,
         description="Web link to the source file used in the analysis.",
         json_schema_extra={"header": "url", "example": "https://gtexportal.org/"},
     )
+
     accession_id: Optional[ShortText] = Field(
         default=None,
         description="Accession identifier if the source file comes from the repository.",
         json_schema_extra={"header": "accession_id", "example": "GSE123456"},
     )
+
     doi: Optional[Text] = Field(
         default=None,
         description="DOI for the publication containing the source file.",
         json_schema_extra={"header": "doi", "example": "10.1038/s41586-020-2493-4"},
     )
 
-    sample_origin: Optional[Literal["primary-tissue", "cell-line", "organoid"] | ShortText] = Field(
+    note: Optional[LongText] = Field(
+        default=None,       
+        description="Extra details to aid interpretation of the source.",
+        json_schema_extra={"header": "note", "example": "The analysis includes only samples from individuals aged 20–29."}
+    )
+
+    sample_origin: Optional[Literal["primary-tissue", "cell-line", "organoid", "iPSC-derived"] | ShortText] = Field(
         default=None,
         description="Biological origin of the sample (e.g., primary-tissue, organoid, cell-line, iPSC-derived).",
         json_schema_extra={"header": "sample_origin", "example": "primary-tissue"},
@@ -73,22 +85,13 @@ class Source(BaseModel):
         description="Primary tissue sampled (detailed anatomical location).",
         json_schema_extra={"header": "tissue", "example": "aorta"},
     )
-    tissue_ontology_term_id: Optional[Text] = Field(
-        default=None,
-        description="The detailed anatomical location of the sample; provide a specific UBERON term (https://www.ebi.ac.uk/ols4/ontologies/uberon).",
-        json_schema_extra={"header": "tissue_ontology_term_id", "example": "UBERON_0000947"},
-    )
 
     cell_type: Optional[ShortText] = Field(
         default=None,
         description="Specific cell type, if applicable.",
         json_schema_extra={"header": "cell_type", "example": "alpha cells"},
     )
-    cell_type_ontology_term_id: Optional[Text] = Field(
-        default=None,
-        description="Cell Ontology (CL) term ID for the cell type.",
-        json_schema_extra={"header": "cell_type_ontology_term_id", "example": "CL_0001204"},
-    )
+
     cell_line: Optional[ShortText] = Field(
         default=None,
         description='Cell line name if sample_origin is "cell-line".',
@@ -100,20 +103,13 @@ class Source(BaseModel):
         description="Disease status of the donor or sample.",
         json_schema_extra={"header": "disease", "example": "healthy"},
     )
+
     life_stage: Optional[ShortText] = Field(
         default=None,
         description="Developmental stage of the biosample.",
         json_schema_extra={"header": "life_stage", "example": "adult"},
     )
-    development_stage_ontology_term_id: Optional[Text] = Field(
-        default=None,
-        description=(
-            "Developmental stage ontology term ID. "
-            "If organism_ontology_term_id is NCBITaxon:9606 use HSAPDV:*; "
-            "if NCBITaxon:10090 use MMUSDV:*."
-        ),
-        json_schema_extra={"header": "development_stage_ontology_term_id", "example": "HSAPDV_0000264"},
-    )
+
     treatment: Optional[LongText] = Field(
         default=None,
         description="Treatments or perturbations applied prior to or during data generation.",
@@ -125,25 +121,13 @@ class Source(BaseModel):
         description="Sex composition of samples.",
         json_schema_extra={"header": "sex", "example": "mixed"},
     )
-    sex_ontology_term_id: Optional[Literal["PATO_0000383", "PATO_0000384", "PATO_0001894"]] = Field(
-        default=None,
-        description=(
-            "PATO term ID for sex/life stage if provided "
-            "(e.g. PATO_0000383 female, PATO_0000384 male, PATO_0001894 for unknown)."
-        ),
-        json_schema_extra={"header": "sex_ontology_term_id", "example": "PATO_0001894"},
-    )
 
     species: Optional[Identifier] = Field(
         default=None,
         description="Species of the sample.",
         json_schema_extra={"header": "species", "example": "human"},
     )
-    organism_ontology_term_id: Optional[Literal["NCBITaxon_9606", "NCBITaxon_10090"] | ShortText] = Field(
-        default=None,
-        description="NCBITaxon_9606 for Homo sapiens, NCBITaxon_10090 for Mus musculus.",
-        json_schema_extra={"header": "organism_ontology_term_id", "example": "NCBITaxon_9606"},
-    )
+
     description: Optional[LongText] = Field(
         default=None,
         description="Brief summary of sample characteristics and intended use.",

@@ -8,11 +8,23 @@ import re
 import xlsxwriter
 from pydantic import BaseModel
 
-from schema_defintation.basic_schema import DatasetDescription, GenomicIdentifier
-from schema_defintation.control_verb import AnyEvidenceCategory, GeneEvidenceCategory, VariantEvidenceCategory
-from schema_defintation.evidence_schema import Evidence
-from schema_defintation.method_schema import Method
-from schema_defintation.source_schema import Source
+from pegasus.schema.peg_metadata_schema.metadata_basic_schema import (
+    DatasetDescription,
+    GenomicIdentifier,
+)
+from pegasus.schema.core import (
+    AnyEvidenceCategory,
+    GeneEvidenceCategory,
+    VariantEvidenceCategory,
+)
+from pegasus.schema.peg_metadata_schema.metadata_evidence_schema import (
+    Evidence,
+)
+from pegasus.schema.peg_metadata_schema.metadata_method_schema import Method
+from pegasus.schema.peg_metadata_schema.metadata_integration_schme import (
+    Integration,
+)
+from pegasus.schema.peg_metadata_schema.metadata_source_schema import Source
 
 def _to_text(x) -> str:
     if x is None:
@@ -126,7 +138,7 @@ def estimate_column_width(
     # Descriptions should wrap: only care about the longest "unbreakable" token
     # and cap its influence.
     desc_need = min(_longest_word_len(desc_s) + 2, cap)
-    example_len = min(_longest_word_len( example_s ) + 2, cap)
+    example_len = min(_longest_word_len(example_s) + 2, cap)
 
     raw = max(header_len + 2, example_len + 2, min_width, desc_need)
     return min(raw, max_width)
@@ -379,33 +391,23 @@ def write_model_sheet(
     for r in range(3, rows):
         ws.set_row(r, 18, body_fmt)
 
-
-
-def generate_excel_from_pydantic(
-    out_path: str | Path,
-    *models: Type[BaseModel],
-):
+def generate_excel_from_pydantic(out_path: str | Path):
     workbook = xlsxwriter.Workbook(str(out_path))
     try:
-        for model in models:
+        for model in (
+            DatasetDescription,
+            GenomicIdentifier,
+            Evidence,
+            Integration,
+            Source,
+            Method,
+        ):
             write_model_sheet(workbook, model)
     finally:
         workbook.close()
 
 
 if __name__ == "__main__":
-    # Run from repo root with: python -m template_creation.spreadsheet_builder
-    from schema_defintation.basic_schema import DatasetDescription, GenomicIdentifier
-    from schema_defintation.integration_schme import Integration
-
-    generate_excel_from_pydantic(
-        "peg_template.xlsx",
-        DatasetDescription,
-        GenomicIdentifier,
-        Evidence,
-        Integration,
-        Source,
-        Method
-    )
-
+    # Run from repo root with: python -m pegasus.template_creation.spreadsheet_builder
+    generate_excel_from_pydantic("peg_template.xlsx")
     print("peg_template.xlsx generated")

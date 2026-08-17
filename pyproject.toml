@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "pegasus"
+version = "0.1.0"
+description = "PEGASUS metadata templates and validation."
+authors = []
+packages = [{ include = "pegasus", from = "src" }]
+
+[tool.poetry.scripts]
+pegasus_tool = "pegasus.main:entry_point"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.0"
+xlsxwriter = "^3.1"
+petl = "^1.7.17"
+pandera = "^0.19.3"
+numpy = "<2.0"
+pandas = "^2.2.0"
+rich = ">=13.7.0,<14"
+openpyxl = "^3.1.2"
+pyyaml = "^6.0.3"
+
+[build-system]
+requires = ["poetry-core>=1.6.0"]
+build-backend = "poetry.core.masonry.api"
