@@ -62,6 +62,25 @@ class TestMatrixCatalogValidation(unittest.TestCase):
             results = PegMatrixValidation(tsv_path).validate_pegmatrix()
         self.assertFalse(_has_type(results, "error"))
 
+    def test_success_without_chr_prefix(self) -> None:
+        row = BASE_ROW.copy()
+        row[BASE_HEADERS.index("PrimaryVariantID")] = "1:100000:A:G"
+        content = _build_tsv(BASE_HEADERS, row)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_without_chr.tsv", content)
+            results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+        self.assertFalse(_has_type(results, "error"))
+
+    def test_success_with_valid_mixed_case_and_dotted_gene_symbol(self) -> None:
+        for symbol in ("C1orf54", "RP11-378J18.8"):
+            row = BASE_ROW.copy()
+            row[BASE_HEADERS.index("GeneSymbol")] = symbol
+            content = _build_tsv(BASE_HEADERS, row)
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                tsv_path = _write_tmp(Path(tmp_dir), "matrix_gene_symbol.tsv", content)
+                results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+            self.assertFalse(_has_type(results, "error"), symbol)
+
     def test_locus_id_is_a_genetic_identifier(self) -> None:
         """LocusID must classify as an identifier, not fall through to "other".
 
@@ -126,6 +145,26 @@ class TestMatrixCatalogValidation(unittest.TestCase):
         self.assertTrue(_has_type(results, "error"))
         self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
 
+    def test_invalid_variantid_with_mixed_separators(self) -> None:
+        row = BASE_ROW.copy()
+        row[BASE_HEADERS.index("PrimaryVariantID")] = "1:100000_A_G"
+        content = _build_tsv(BASE_HEADERS, row)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_mixed_separators.tsv", content)
+            results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+        self.assertTrue(_has_type(results, "error"))
+        self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
+
+    def test_invalid_variantid_without_chromosome(self) -> None:
+        row = BASE_ROW.copy()
+        row[BASE_HEADERS.index("PrimaryVariantID")] = ":100000:A:G"
+        content = _build_tsv(BASE_HEADERS, row)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_missing_chromosome.tsv", content)
+            results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+        self.assertTrue(_has_type(results, "error"))
+        self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
+
     def test_invalid_rsid(self) -> None:
         row = BASE_ROW.copy()
         row[BASE_HEADERS.index("rsID")] = "1234"
@@ -166,6 +205,19 @@ class TestMatrixCatalogValidation(unittest.TestCase):
         self.assertTrue(_has_type(results, "warning"))
         self.assertFalse(_has_type(results, "error"))
         self.assertTrue(_has_step(results, "1/4 - Header Classification"))
+
+    def test_unknown_column_does_not_skip_fixed_column_validation(self) -> None:
+        headers = BASE_HEADERS + ["UNKNOWN"]
+        row = BASE_ROW.copy() + ["X"]
+        row[BASE_HEADERS.index("PrimaryVariantID")] = "invalid"
+        content = _build_tsv(headers, row)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tsv_path = _write_tmp(Path(tmp_dir), "matrix_unknown_and_invalid.tsv", content)
+            results = PegMatrixValidation(tsv_path).validate_pegmatrix()
+
+        self.assertTrue(_has_type(results, "warning"))
+        self.assertTrue(_has_type(results, "error"))
+        self.assertTrue(_has_step(results, "4/4 - Fixed Column Validation"))
 
     def test_invalid_one_evidence(self) -> None:
         headers = [h for h in BASE_HEADERS if h != "QTL_eqtl_pvalue"]

@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Microsoft Office temporary lock files
+~$*.xlsx
+
 # Python bytecode
 __pycache__/
 *.py[cod]

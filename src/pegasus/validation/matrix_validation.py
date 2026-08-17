@@ -196,7 +196,6 @@ class PegMatrixValidation:
                     "message": f"The following columns are not recognized and will be ignored in validation: {classified_headers['other']}",
                 }
             )
-            return self.errors
         else:
             self.errors.append(
                 {
