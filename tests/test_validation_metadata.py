@@ -792,3 +792,134 @@ class TestExcelDateCoercion(unittest.TestCase):
                 if r.get("step") == "Source - Row Validation" and r.get("type") == "error"
             ]
             self.assertEqual(source_errors, [], f"date cell should validate cleanly: {source_errors}")
+
+
+class TestSourceIdentifierPreference(unittest.TestCase):
+    """peg_source and gwas_source prefer a structured ID but must not block a submission.
+
+    The union on these fields ends in a bare ``str``, so anything at all
+    validates. That is deliberate — a submitter without an accession should
+    still get through — but a free-text value should say so rather than pass
+    silently.
+    """
+
+    _DATASET_STEP = "DatasetDescription - Identifier Preference"
+
+    @staticmethod
+    def _validate_with_dataset_row(tmp_dir: str, row: Dict[str, Any]) -> List[Dict[str, Any]]:
+        path = Path(tmp_dir) / "meta.xlsx"
+        _write_metadata_excel(
+            path,
+            evidence_rows=_valid_evidence_rows(4),
+            integration_rows=_valid_integration_rows(3, author_conclusion_index=1),
+            source_rows=[{}, {"source_tag": "source_ok"}],
+            method_rows=[{}, {"method_tag": "method_ok"}],
+            dataset_rows=[{}, row],
+        )
+        return PegMetadataValidation(path).validate_metadata()
+
+    def test_free_text_gwas_source_warns_instead_of_failing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"gwas_source": "Aragam et al. 2022"}
+            )
+
+        self.assertFalse(_has_type(results, "error"), f"should not block: {results}")
+        self.assertTrue(_has_step(results, self._DATASET_STEP), f"no warning raised: {results}")
+
+    def test_lowercase_doi_gwas_source_does_not_warn(self) -> None:
+        """DOIs are case-insensitive and are published lowercase in practice."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"gwas_source": "10.1038/s41586-022-04394-w"}
+            )
+
+        self.assertFalse(_has_step(results, self._DATASET_STEP), f"spurious warning: {results}")
+
+    def test_doi_prefix_separator_must_be_a_literal_dot(self) -> None:
+        """The DOI pattern's '10.' had an unescaped dot, so '10X1038/...' matched."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"gwas_source": "10X1038/s41586-022-04394-w"}
+            )
+
+        self.assertTrue(_has_step(results, self._DATASET_STEP), f"not flagged: {results}")
+
+    def test_gcst_accession_does_not_warn(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(tmp_dir, {"gwas_source": "GCST123456"})
+
+        self.assertFalse(_has_step(results, self._DATASET_STEP), f"spurious warning: {results}")
+
+    def test_pmid_peg_source_does_not_warn(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(tmp_dir, {"peg_source": "PMID:36357675"})
+
+        self.assertFalse(_has_step(results, self._DATASET_STEP), f"spurious warning: {results}")
+
+    def test_absent_source_does_not_warn(self) -> None:
+        """Both fields are optional; leaving one out is not worth a warning."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"peg_source": None, "gwas_source": None}
+            )
+
+        self.assertFalse(_has_step(results, self._DATASET_STEP), f"spurious warning: {results}")
+
+    def test_free_text_peg_source_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"peg_source": "supplementary table 3"}
+            )
+
+        warnings_raised = [r for r in results if r.get("step") == self._DATASET_STEP]
+        self.assertEqual(len(warnings_raised), 1, f"expected one warning: {results}")
+        self.assertEqual(warnings_raised[0]["type"], "warning")
+
+    def test_warning_names_the_row_field_and_value(self) -> None:
+        """A submitter has to be able to find the offending cell from the report."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"gwas_source": "Aragam et al. 2022"}
+            )
+
+        detail = next(r for r in results if r.get("step") == self._DATASET_STEP)["details"][0]
+        self.assertEqual(detail["row"], 4)
+        entry = detail["error"][0]
+        self.assertEqual(entry["loc"], ["gwas_source"])
+        self.assertIn("Aragam et al. 2022", entry["value"])
+        self.assertIn("GCST", entry["hint"])
+
+    def test_default_report_shows_the_offending_field_and_value(self) -> None:
+        """The JSON consumer is not the only reader — the terminal report must name the cell."""
+        import io
+        from contextlib import redirect_stdout
+
+        from pegasus.main import format_errors_rich
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir, {"gwas_source": "Aragam et al. 2022"}
+            )
+
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            format_errors_rich(results)
+        rendered = buffer.getvalue()
+
+        self.assertIn("gwas_source", rendered)
+        self.assertIn("Aragam et al. 2022", rendered)
+
+    def test_one_row_reports_all_its_free_text_fields_together(self) -> None:
+        """Both fields bad in one row should read as one row, not two 'Row 4:' blocks."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            results = self._validate_with_dataset_row(
+                tmp_dir,
+                {"peg_source": "supplementary table 3", "gwas_source": "Aragam et al. 2022"},
+            )
+
+        details = next(r for r in results if r.get("step") == self._DATASET_STEP)["details"]
+        self.assertEqual(len(details), 1, f"expected one row entry: {details}")
+        self.assertEqual(
+            [e["loc"][0] for e in details[0]["error"]], ["peg_source", "gwas_source"]
+        )

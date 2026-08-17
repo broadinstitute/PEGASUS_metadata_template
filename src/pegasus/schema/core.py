@@ -46,7 +46,7 @@ PATO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PAT
 ECO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^ECO[:_]\d+$", max_length=128)]
 
 PMID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PMID:\s*\d+$", max_length=32)]
-DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10.\d{4,9}/[-._;()/:A-Z0-9]+$", max_length=128)]
+DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10\.\d{4,9}/[-._;()/:A-Za-z0-9]+$", max_length=128)]
 GCST = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^GCST\d+$", max_length=32)]
 RSID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^rs\d+$", max_length=32)]
 

@@ -6,10 +6,10 @@ import datetime
 import re
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, Union, get_args
 
 import pandas as pd
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from pegasus.schema.core import (
     AnyEvidenceCategory,
@@ -45,6 +45,33 @@ _FORMAT_ERROR_TYPES = frozenset({
     "union_tag_invalid",
     "value_error",
 })
+
+
+def _preferred_identifier_checks(
+    model: type[BaseModel],
+) -> dict[str, tuple[TypeAdapter, str]]:
+    """Map fields that prefer a structured identifier to a validator for those forms.
+
+    A field opts in by carrying ``preferred_identifier`` in its
+    ``json_schema_extra``; the value is the guidance shown to the submitter.
+    The accepted forms are read off the field's own annotation with the bare
+    ``str`` member dropped. That member is what lets a submitter without an
+    accession through at all, so removing it leaves exactly the identifier
+    types worth preferring and keeps the schema the only place they are named.
+    """
+    checks: dict[str, tuple[TypeAdapter, str]] = {}
+    for field_name, field in model.model_fields.items():
+        extra = field.json_schema_extra or {}
+        guidance = extra.get("preferred_identifier")
+        if not guidance:
+            continue
+        structured = [
+            arg for arg in get_args(field.annotation)
+            if arg is not str and arg is not type(None)
+        ]
+        if structured:
+            checks[field_name] = (TypeAdapter(Union[tuple(structured)]), str(guidance))
+    return checks
 
 
 def _format_excel_datetime(value: datetime.datetime | datetime.date) -> str:
@@ -217,6 +244,8 @@ class PegMetadataValidation:
         records = []
         valid_records = []
         row_errors = []
+        identifier_checks = _preferred_identifier_checks(model)
+        identifier_warnings = []
 
         for idx, row in df.iterrows():
             record = {}
@@ -250,6 +279,28 @@ class PegMetadataValidation:
 
             records.append(record)
 
+            free_text_sources = []
+            for field_name, (adapter, guidance) in identifier_checks.items():
+                value = record.get(field_name)
+                if value is None:
+                    continue
+                try:
+                    adapter.validate_python(value)
+                except ValidationError:
+                    free_text_sources.append({
+                        "loc": [field_name],
+                        "msg": "not a recognized identifier",
+                        "value": repr(value),
+                        "hint": guidance,
+                    })
+            if free_text_sources:
+                # Same detail shape as row errors so the terminal reporter
+                # renders these without special-casing, one block per row.
+                identifier_warnings.append({
+                    "row": int(idx) + 3,
+                    "error": free_text_sources,
+                })
+
             try:
                 model.model_validate(record)
                 valid_records.append(record)
@@ -271,6 +322,17 @@ class PegMetadataValidation:
                 row_errors.append(row_err)
                 if len(row_errors) >= error_limit:
                     break
+
+        if identifier_warnings:
+            self.errors.append({
+                "step": f"{sheet_name} - Identifier Preference",
+                "type": "warning",
+                "message": (
+                    "One or more source fields are free text rather than a "
+                    "recognized identifier. The submission is still valid."
+                ),
+                "details": identifier_warnings,
+            })
 
         if row_errors:
             self.errors.append({

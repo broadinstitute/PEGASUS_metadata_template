@@ -59,6 +59,16 @@ DatasetDescription conditional rule:
   - `gwas_sample_ancestry`
   - `gwas_sample_ancestry_label`
 
+Source identifier preference (`peg_source`, `gwas_source`):
+- Both fields end their type union in a bare `str`, so a free-text value is
+  accepted and never blocks a submission.
+- A value that matches none of the structured forms raises a **warning**
+  naming the row, field, value, and the identifiers preferred for that field.
+  `gwas_source` prefers GCST, then PMID / DOI / URL; `peg_source` prefers
+  PMID / DOI / URL.
+- The structured forms are read off each field's own annotation, so adding or
+  removing a union member changes the check with it.
+
 Evidence sheet rules:
 - Prefilled Evidence rows are ignored when `evidence_category` is 0 or 0.0.
 - `evidence_category_abbreviation` must map to `evidence_category` per `EVIDENCE_CATEGORY_MAP`.

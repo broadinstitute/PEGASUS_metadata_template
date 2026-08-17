@@ -37,13 +37,24 @@ class DatasetDescription(BaseModel):
     peg_source: Optional[PMID | HttpUrl | DOI | str] = Field(
         default=None,
         description="Identifier of the origin of the PEG list (e.g., publication, DOI, preprint, URL).",
-        json_schema_extra={"header": "peg_source", "example": "PMID:36357675"},
+        json_schema_extra={
+            "header": "peg_source",
+            "example": "PMID:36357675",
+            "preferred_identifier": "prefer a PubMed ID (PMID:36357675), DOI, or URL",
+        },
     )
 
     gwas_source: Optional[GCST | PMID | HttpUrl | DOI | str] = Field(
         default=None,
         description="Identifier of the GWAS source. Prefer GWAS Catalog accession (GCST); if not available, use PubMed ID, doi, url",
-        json_schema_extra={"header": "gwas_source", "example": "GCST000001"},
+        json_schema_extra={
+            "header": "gwas_source",
+            "example": "GCST000001",
+            "preferred_identifier": (
+                "prefer a GWAS Catalog accession (GCST000001), PubMed ID (PMID:36357675), "
+                "DOI, or URL"
+            ),
+        },
     )
 
     gwas_samples_description: Optional[LongText] = Field(
