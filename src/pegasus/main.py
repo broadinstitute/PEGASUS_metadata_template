@@ -9,6 +9,7 @@ and conversion between Excel, JSON, and YAML formats.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from pathlib import Path
@@ -140,59 +141,200 @@ def cross_validate_list_matrix(
     list_file: Path,
     matrix_file: Path,
     metadata_file: Path | None = None,
-) -> None:
-    """Cross-validate PEG list, matrix, and metadata files."""
+) -> list[dict]:
+    """Cross-validate PEG list, matrix, and metadata files.
 
-    list_validator = PegListValidation(list_file)
+    Returns a list of validation results in the same format as other validators.
+    """
+    results = []
+    step_num = 0
+    total_steps = 4  # Total number of cross-validation checks
+
     matrix_validator = PegMatrixValidation(matrix_file)
     if metadata_file is None:
-        console.print("[bold yellow]Warning:[/bold yellow] Metadata file missing; skipping cross validation.")
-        return
+        results.append({
+            "step": "Cross-validation skipped",
+            "type": "warning",
+            "message": "Metadata file missing; skipping cross validation.",
+        })
+        return results
+
     metadata_validator = PegMetadataValidation(metadata_file)
     metadata_validator.validate_metadata()
 
-    list_columns = list_validator.classify_headers()
-    matrix_columns = matrix_validator.classify_headers()    
-    
-    # metadata columns
+    matrix_columns = matrix_validator.classify_headers()
+
+    # Check 1: Evidence column consistency between matrix and metadata
+    step_num += 1
     metadata_columns = metadata_validator.cross_check_column_names()
     metadata_columns = metadata_columns["Evidence"] + metadata_columns["Integration"]
 
     matrix_evidence = set(matrix_columns["evidence"]+ matrix_columns["int"])
     metadata_evidence = set(metadata_columns)
-    
+
     extra = matrix_evidence - metadata_evidence
     missing = metadata_evidence - matrix_evidence
     if extra or missing:
-        console.print("[bold red]Error:[/bold red] Mismatch in evidence columns between matrix and metadata files.")
+        error_msg = "Mismatch in evidence columns between matrix and metadata files."
+        details = []
+        # Sort on the string form: a stray non-string column name must not be
+        # able to raise a TypeError out of a validation run.
         if extra:
-            console.print(f"  Matrix has extra evidence columns not in metadata: {sorted(extra)}")
+            details.append(f"Matrix has extra evidence columns not in metadata: {sorted(map(str, extra))}")
         if missing:
-            console.print(f"  Metadata has extra evidence columns not in matrix: {sorted(missing)}")
+            details.append(f"Metadata has extra evidence columns not in matrix: {sorted(map(str, missing))}")
 
-    # from metadata, get the records for the line which authors_conclusion is true
-    author_conclusion = metadata_validator.return_author_conclusion_rows()
-    if not author_conclusion:
-        console.print("[bold red]Error:[/bold red] No author conclusion records found.")
-        return
-    
-    conclusion_column_names=author_conclusion[0]["column_header"]
-    conclusion_evidence_steams=author_conclusion[0]["evidence_streams_included"].split("|")
-    conclusion_int_tags=author_conclusion[0]["integrations_included"].split("|")
+        results.append({
+            "step": f"{step_num}/{total_steps} - Evidence Column Consistency",
+            "type": "error",
+            "message": error_msg,
+            "details": details,
+        })
+    else:
+        results.append({
+            "step": f"{step_num}/{total_steps} - Evidence Column Consistency",
+            "type": "info",
+            "message": f"Matrix and metadata evidence columns match ({len(matrix_evidence)} columns).",
+        })
 
+    # Check 2: Author conclusion records exist in metadata
+    step_num += 1
+    try:
+        author_conclusion = metadata_validator.return_author_conclusion_rows()
+    except ValueError as exc:
+        # return_author_conclusion_rows raises unless there is exactly one such
+        # row. Report that as a validation result instead of letting the
+        # exception escape and kill the CLI.
+        results.append({
+            "step": f"{step_num}/{total_steps} - Author Conclusion Records",
+            "type": "error",
+            "message": str(exc),
+        })
+        return results
+
+    results.append({
+        "step": f"{step_num}/{total_steps} - Author Conclusion Records",
+        "type": "info",
+        "message": f"Found {len(author_conclusion)} author conclusion record(s) in metadata.",
+    })
+
+    conclusion_column_names = author_conclusion[0].get("column_header")
+    # A stream/tag consistency check belongs here eventually, reading
+    # evidence_streams_included and integrations_included off this row. Both
+    # fields are optional, so a blank cell means "no tags declared".
+
+    # Check 3: Conclusion column exists in matrix file
+    step_num += 1
     all_matrix_headers = [h for headers in matrix_columns.values() for h in headers]
     if conclusion_column_names not in all_matrix_headers:
-        console.print("[bold red]Error:[/bold red] Conclusion column names not found in matrix file.")
-        return
+        results.append({
+            "step": f"{step_num}/{total_steps} - Conclusion Column in Matrix",
+            "type": "error",
+            "message": f"Conclusion column '{conclusion_column_names}' not found in matrix file.",
+        })
+    else:
+        results.append({
+            "step": f"{step_num}/{total_steps} - Conclusion Column in Matrix",
+            "type": "info",
+            "message": f"Conclusion column '{conclusion_column_names}' found in matrix file.",
+        })
 
-    all_list_headers = [h for headers in list_columns.values() for h in headers]
-    if conclusion_column_names not in all_list_headers:
-        console.print("[bold red]Error:[/bold red] Conclusion column names not found in list file.")
-        return
-    
-    # Should we check the stream and tag here? 
+    # Check 4: The list must copy the matrix conclusion for every selected row.
+    step_num += 1
+    selection_step = f"{step_num}/{total_steps} - List Rows Match Positive Matrix Conclusions"
+    if conclusion_column_names not in all_matrix_headers:
+        results.append({
+            "step": selection_step,
+            "type": "error",
+            "message": (
+                "List selections cannot be checked because the matrix conclusion "
+                f"column '{conclusion_column_names}' is missing."
+            ),
+        })
+        return results
 
-    return
+    with matrix_file.open(newline="", encoding="utf-8-sig") as handle:
+        matrix_rows = list(csv.DictReader(handle, delimiter="\t"))
+    with list_file.open(newline="", encoding="utf-8-sig") as handle:
+        list_reader = csv.DictReader(handle, delimiter="\t")
+        list_headers = list_reader.fieldnames or []
+        selected_rows = list(list_reader)
+
+    if conclusion_column_names not in list_headers:
+        results.append({
+            "step": selection_step,
+            "type": "error",
+            "message": (
+                f"Conclusion column '{conclusion_column_names}' not found in list file."
+            ),
+        })
+        return results
+
+    conclusions_by_key: dict[tuple[str, str], list[str]] = {}
+    for row in matrix_rows:
+        key = (
+            (row.get("PrimaryVariantID") or "").strip(),
+            (row.get("GeneSymbol") or "").strip(),
+        )
+        conclusions_by_key.setdefault(key, []).append(
+            (row.get(conclusion_column_names) or "").strip()
+        )
+
+    false_like_values = {"", "NA", "N/A", "NONE", "-", "FALSE", "0", "N", "NO"}
+    missing_keys: list[str] = []
+    non_positive_keys: list[str] = []
+    mismatched_keys: list[str] = []
+    for row in selected_rows:
+        key = (
+            (row.get("PrimaryVariantID") or "").strip(),
+            (row.get("GeneSymbol") or "").strip(),
+        )
+        values = conclusions_by_key.get(key)
+        display_key = f"{key[0]} / {key[1]}"
+        if values is None:
+            missing_keys.append(display_key)
+            continue
+
+        positive_values = {
+            value.upper() for value in values
+            if value.upper() not in false_like_values
+        }
+        if not positive_values:
+            non_positive_keys.append(display_key)
+        elif (row.get(conclusion_column_names) or "").strip().upper() not in positive_values:
+            mismatched_keys.append(display_key)
+
+    if missing_keys or non_positive_keys or mismatched_keys:
+        details = []
+        if missing_keys:
+            details.append(f"List rows missing from matrix: {missing_keys}")
+        if non_positive_keys:
+            details.append(
+                f"List rows without a positive '{conclusion_column_names}' value: "
+                f"{non_positive_keys}"
+            )
+        if mismatched_keys:
+            details.append(
+                f"List rows whose '{conclusion_column_names}' value does not match "
+                f"the matrix: {mismatched_keys}"
+            )
+        results.append({
+            "step": selection_step,
+            "type": "error",
+            "message": "One or more list rows do not match a positive matrix conclusion.",
+            "details": details,
+        })
+    else:
+        results.append({
+            "step": selection_step,
+            "type": "info",
+            "message": (
+                f"All {len(selected_rows)} list row(s) copy a positive matrix "
+                f"'{conclusion_column_names}' value."
+            ),
+        })
+
+    return results
 #----------------------------------------------
 # Error formatting and UI response creation
 #----------------------------------------------
@@ -261,23 +403,43 @@ def format_errors_rich(errors: list[dict]) -> None:
                     error_msg = details.get("error", "")
                     console.print(Text(f"  Row {row_num}: ", style="dim") + Text(str(error_msg), style="red"))
             elif isinstance(details, list):
-                # List of row errors
-                for detail in details[:5]:  # Limit to first 5 details
-                    if isinstance(detail, dict):
-                        row = detail.get("row", "?")
-                        error_msg = detail.get("error", "")
-                        if isinstance(error_msg, list):
-                            # Format pydantic errors
-                            error_text = Text()
-                            error_text.append(f"  Row {row}:\n", style="dim")
-                            for err in error_msg[:3]:  # Limit to 3 errors per row
-                                if isinstance(err, dict):
-                                    loc = " -> ".join(str(x) for x in err.get("loc", []))
-                                    msg = err.get("msg", "")
-                                    error_text.append(f"    {loc}: {msg}\n", style="red")
-                            console.print(error_text)
-                        else:
-                            console.print(Text(f"  Row {row}: ", style="dim") + Text(str(error_msg), style="red"))
+                # Check if it's a list of strings (simple messages) or list of dicts (row errors)
+                if details and isinstance(details[0], str):
+                    # List of simple string messages (e.g., from cross-validation)
+                    for detail in details:
+                        console.print(Text(f"  • {detail}", style=color))
+                else:
+                    # List of row errors
+                    for detail in details[:5]:  # Limit to first 5 details
+                        if isinstance(detail, dict):
+                            row = detail.get("row", "?")
+                            key = detail.get("key", "")
+                            error_msg = detail.get("error", "")
+                            if isinstance(error_msg, list):
+                                # Format pydantic errors
+                                error_text = Text()
+                                row_label = f"  Row {row}"
+                                if key:
+                                    row_label += f" ({key})"
+                                error_text.append(row_label + ":\n", style="dim")
+                                for err in error_msg[:3]:  # Limit to 3 errors per row
+                                    if isinstance(err, dict):
+                                        loc = " -> ".join(str(x) for x in err.get("loc", []))
+                                        msg = err.get("msg", "")
+                                        value = err.get("value", "")
+                                        hint = err.get("hint", "")
+                                        expected = err.get("expected_example", "")
+                                        error_text.append(f"    {loc}: {msg}", style="red")
+                                        if value:
+                                            error_text.append(f"  [got: {value}]", style="yellow")
+                                        error_text.append("\n")
+                                        if expected:
+                                            error_text.append(f"      expected example: {expected}\n", style="cyan")
+                                        if hint:
+                                            error_text.append(f"      hint: {hint}\n", style="yellow")
+                                console.print(error_text)
+                            else:
+                                console.print(Text(f"  Row {row}: ", style="dim") + Text(str(error_msg), style="red"))
 
 
 def create_ui_response(
@@ -512,16 +674,23 @@ def main() -> int:
         "input_path",
         type=Path,
         nargs="?",
-        help="Input file path (not required for schema-to-xlsx)",
+        help="Input file path. For schema-to-xlsx there is no input, so this is "
+             "treated as the output path instead.",
     )
-    
+
     convert_parser.add_argument(
         "output_path",
         type=Path,
         nargs="?",
         help="Output file path (optional, will print to stdout if not provided)",
     )
-    
+
+    convert_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output file if it already exists",
+    )
+
     args = parser.parse_args()
     
     # Handle conversion command
@@ -582,10 +751,19 @@ def handle_convert(args: argparse.Namespace) -> int:
                 return 1
         
         elif args.conversion_type == "schema-to-xlsx":
-            if not args.output_path:
+            # There is no input for this conversion, so a lone positional is the
+            # destination. That makes it easy to name a file you meant to keep —
+            # refuse to clobber an existing one unless asked explicitly.
+            output_path = args.output_path or args.input_path
+            if not output_path:
                 console.print("[bold red]Error:[/bold red] Output Excel file path required for schema-to-xlsx")
                 return 1
-            
+            if output_path.exists() and not getattr(args, "force", False):
+                console.print(f"[bold red]Error:[/bold red] Output file already exists: {output_path}")
+                console.print("[yellow]Pass --force to overwrite it.[/yellow]")
+                return 1
+            args.output_path = output_path
+
             console.print(f"[cyan]Generating Excel template from schema:[/cyan] {args.output_path}")
             from pegasus.template_convert.spreadsheet_builder import generate_excel_from_pydantic
             generate_excel_from_pydantic(args.output_path)
@@ -641,14 +819,9 @@ def handle_validate(args: argparse.Namespace) -> int:
         "metadata": lambda p: validate_metadata(p, error_limit=args.error_limit),
     }
     
-    # Helper to print status (only for text format)
-    def status_print(msg: str) -> None:
-        if args.format == "text":
-            console.print(msg)
 
     def run_validation(file_type: str, file_path: Path) -> None:
         nonlocal has_errors, metadata_validator
-        status_print(f"[cyan]Validating {file_type} file:[/cyan] {file_path}")
         
         # For metadata, store the validator instance for cross-file validation
         if file_type == "metadata":
@@ -737,8 +910,11 @@ def handle_validate(args: argparse.Namespace) -> int:
         matrix_file = dir_related_files.get("matrix")
         metadata_file = dir_related_files.get("metadata")
         if list_file and matrix_file and metadata_file:
-            status_print("[cyan]Cross-validating list, matrix, and metadata files...[/cyan]")
-            cross_validate_list_matrix(list_file, matrix_file, metadata_file)
+            cross_results = cross_validate_list_matrix(list_file, matrix_file, metadata_file)
+            all_results["cross_validation"] = cross_results
+            file_paths["cross_validation"] = None  # No single file path for cross-validation
+            if any(e.get("type") == "error" for e in cross_results):
+                has_errors = True
     
     # Output results
     if args.format == "json":
@@ -749,8 +925,12 @@ def handle_validate(args: argparse.Namespace) -> int:
         # Rich terminal output
         for file_type, results in all_results.items():
             console.print()
+            # Format display name (replace underscores with hyphens)
+            display_name = file_type.replace("_", "-").upper()
+            fp = file_paths.get(file_type)
+            filename_str = f"  {fp.name}" if fp else ""
             console.print(Panel(
-                f"[bold]{file_type.upper()} Validation Results[/bold]",
+                f"[bold]{display_name} Validation Results[/bold]{filename_str}",
                 border_style="blue",
                 title="[bold blue]PEGASUS[/bold blue]",
             ))

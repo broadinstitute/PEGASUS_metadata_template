@@ -1,4 +1,4 @@
-from typing import  Literal, Optional
+from typing import Optional
 import re
 from pydantic import BaseModel, Field, HttpUrl, model_validator
 from pegasus.schema.core import (
@@ -34,16 +34,27 @@ class DatasetDescription(BaseModel):
         json_schema_extra={"header": "trait_ontology_id", "example": "EFO_0800173"},
     )
 
-    gwas_source: Optional[GCST | PMID | HttpUrl | DOI] = Field(
-        default=None,
-        description="Identifier of the GWAS source. Prefer GWAS Catalog accession (GCST); if not available, use PubMed ID, doi, url",
-        json_schema_extra={"header": "gwas_source", "example": "GCST000001"},
-    )
-
-    peg_source: Optional[GCST | PMID | HttpUrl | DOI] = Field(
+    peg_source: Optional[PMID | HttpUrl | DOI | str] = Field(
         default=None,
         description="Identifier of the origin of the PEG list (e.g., publication, DOI, preprint, URL).",
-        json_schema_extra={"header": "peg_source", "example": "PMID:36357675"},
+        json_schema_extra={
+            "header": "peg_source",
+            "example": "PMID:36357675",
+            "preferred_identifier": "prefer a PubMed ID (PMID:36357675), DOI, or URL",
+        },
+    )
+
+    gwas_source: Optional[GCST | PMID | HttpUrl | DOI | str] = Field(
+        default=None,
+        description="Identifier of the GWAS source. Prefer GWAS Catalog accession (GCST); if not available, use PubMed ID, doi, url",
+        json_schema_extra={
+            "header": "gwas_source",
+            "example": "GCST000001",
+            "preferred_identifier": (
+                "prefer a GWAS Catalog accession (GCST000001), PubMed ID (PMID:36357675), "
+                "DOI, or URL"
+            ),
+        },
     )
 
     gwas_samples_description: Optional[LongText] = Field(
@@ -124,42 +135,48 @@ class GenomicIdentifier(BaseModel):
         json_schema_extra={"header": "variant_type", "example": "lead"},
     )
 
+    variant_information: Optional[LongText] = Field(
+        default=None,
+        description="Additional free-text notes about the variant",
+        json_schema_extra={"header": "variant_information", "example": "The primary variant is the variant with the most significant association p-value in the study"},
+    )
+
     genome_build: GenomeBuild = Field(
         default="GRCh38",
         description="Genome assembly used to map variants.",
         json_schema_extra={"header": "genome_build", "example": "GRCh38"},
     )
 
-    variant_information: Optional[LongText] = Field(
-        default=None,
-        description="Additional free-text notes about the variant",
-        json_schema_extra={"header": "variant_information", "example": "The primary variant is the variant with the most significant association p-value in the study"},
-    )
     gene_id_source_version: Optional[Identifier] = Field(
         default=None,
         description="Version of the source database used for gene symbols/IDs (e.g., HGNC version).",
         json_schema_extra={"header": "gene_id_source_version", "example": "Ensembl v109"},
     )
+
     gene_symbol_source_version: Optional[Identifier] = Field(
         default=None,
         description="Version of the gene symbol reference authority",
         json_schema_extra={"header": "gene_symbol_source_version", "example": "HGNC 2025-07-30"},
     )
-    info: Optional[LongText] = Field(
+
+    gene_info: Optional[LongText] = Field(
         default=None,
         description="Additional gene-level metadata that supports interpretation.",
         json_schema_extra={"header": "info", "example": "NA"},
     )
+
     locus_type: Optional[ShortText] = Field(
         default=None,
         description="Method used to define locus boundaries",
         json_schema_extra={"header": "locus_type", "example": "lead_variant +/- 500kb"},
     )
+
     locus_id: Optional[Identifier] = Field(
         default=None,
         description="Provide the explanation of how the identifier was derived",
         json_schema_extra={"header": "locus_id", "example": "lead_variant"},
     )
+    
     locus_info: Optional[LongText] = Field(
         default=None,
         description="Additional information supporting locus interpretation.",

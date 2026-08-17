@@ -26,6 +26,7 @@ class Source(BaseModel):
         description="Unique identifier for the source.",
         json_schema_extra={"header": "source_tag", "example": "source_gtex_aorta"},
     )
+    
     provenance: Optional[Identifier] = Field(
         default=None,
         description=(
@@ -36,33 +37,44 @@ class Source(BaseModel):
         ),
         json_schema_extra={"header": "provenance", "example": "GTEx"},
     )
+
     file_name: Optional[ShortText] = Field(
         default=None,
         description="Exact filename of the source dataset.",
         json_schema_extra={"header": "file_name", "example": "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct.gz"},
     )
+
     version: Optional[ShortText] = Field(
         default=None,
         description="Version or release of the dataset.",
         json_schema_extra={"header": "version", "example": "v8"},
     )
+    
     url: Optional[HttpUrl] = Field(
         default=None,
         description="Web link to the source file used in the analysis.",
         json_schema_extra={"header": "url", "example": "https://gtexportal.org/"},
     )
+
     accession_id: Optional[ShortText] = Field(
         default=None,
         description="Accession identifier if the source file comes from the repository.",
         json_schema_extra={"header": "accession_id", "example": "GSE123456"},
     )
+
     doi: Optional[Text] = Field(
         default=None,
         description="DOI for the publication containing the source file.",
         json_schema_extra={"header": "doi", "example": "10.1038/s41586-020-2493-4"},
     )
 
-    sample_origin: Optional[Literal["primary-tissue", "cell-line", "organoid"] | ShortText] = Field(
+    note: Optional[LongText] = Field(
+        default=None,       
+        description="Extra details to aid interpretation of the source.",
+        json_schema_extra={"header": "note", "example": "The analysis includes only samples from individuals aged 20–29."}
+    )
+
+    sample_origin: Optional[Literal["primary-tissue", "cell-line", "organoid", "iPSC-derived"] | ShortText] = Field(
         default=None,
         description="Biological origin of the sample (e.g., primary-tissue, organoid, cell-line, iPSC-derived).",
         json_schema_extra={"header": "sample_origin", "example": "primary-tissue"},

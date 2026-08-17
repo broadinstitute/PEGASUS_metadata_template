@@ -45,8 +45,8 @@ NCBITAXON_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r
 PATO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PATO[:_]\d+$", max_length=128)]
 ECO_ID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^ECO[:_]\d+$", max_length=128)]
 
-PMID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PMID:\d+$", max_length=32)]
-DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10.\d{4,9}/[-._;()/:A-Z0-9]+$", max_length=128)]
+PMID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^PMID:\s*\d+$", max_length=32)]
+DOI = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^10\.\d{4,9}/[-._;()/:A-Za-z0-9]+$", max_length=128)]
 GCST = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^GCST\d+$", max_length=32)]
 RSID = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^rs\d+$", max_length=32)]
 
@@ -76,7 +76,7 @@ class SexComposition(str, Enum):
 class VariantEvidenceCategory(str, Enum):
     # Use controlled list here (examples only)
     LD = "Linkage disequilibrium"
-    FINEMAP = "Finemapping and credible sets"
+    FM = "Finemapping and credible sets"
     COLOC = "Colocalisation"
     QTL = "Molecular QTL"
     MR = "Mendelian Randomization (MR)"
@@ -118,7 +118,7 @@ EVIDENCE_CATEGORY_MAP: dict[str, str] = {
 
 class EvidenceCategoryAbbreviation(str, Enum):
     LD = "LD"
-    FINEMAP = "FINEMAP"
+    FM = "FM"
     COLOC = "COLOC"
     QTL = "QTL"
     MR = "MR"

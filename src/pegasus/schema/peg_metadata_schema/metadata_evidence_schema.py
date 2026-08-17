@@ -39,8 +39,8 @@ class Evidence(BaseModel):
         json_schema_extra={"header": "column_description", "example": "p-value from eQTL analysis in aorta tissue"}
     )
     evidence_stream_tag: Optional[ShortText] = Field(
-        ...,    
-        description="Specific analysis stream within the evidence category.",                                
+        default=None,
+        description="Specific analysis stream within the evidence category.",
         json_schema_extra={"header": "evidence_stream_tag", "example": "eQTL"}
     )
     evidence_category: EvidenceCategory  = Field(
@@ -59,34 +59,34 @@ class Evidence(BaseModel):
         json_schema_extra={"header": "variant_or_gene_centric", "example": "variant-centric"}
     )
     source_tag: Optional[ShortText] = Field(
-        ...,    
-        description="Identifier for the data source, created in the source tab.",                                
+        default=None,
+        description="Identifier for the data source, created in the source tab.",
         json_schema_extra={"header": "source_tag", "example": "source_gtex_aorta"}
     )
     method_tag: Optional[ShortText] = Field(
-        ...,    
-        description="Identifier for the analysis method, created in the method tab.",                                
+        default=None,
+        description="Identifier for the analysis method, created in the method tab.",
         json_schema_extra={"header": "method_tag", "example": "soft_fastqtl"}
     )
     threshold: Optional[ShortText] = Field(
-        ...,    
-        description="Threshold applied to define significance or inclusion criteria.",                                
+        default=None,
+        description="Threshold applied to define significance or inclusion criteria.",
         json_schema_extra={"header": "threshold", "example": "p_value < 0.05"}
     )
     note: Optional[LongText] = Field(
-        ...,    
-        description="Additional free text clarifications to aid interpretation.",                                
+        default=None,
+        description="Additional free text clarifications to aid interpretation.",
         json_schema_extra={"header": "note", "example": ""}
     )
 
     @model_validator(mode="after")
     def _validate_category_pair(self) -> "Evidence":
-        expected = EVIDENCE_CATEGORY_MAP.get(str(self.evidence_category_abbreviation))
+        expected = EVIDENCE_CATEGORY_MAP.get(self.evidence_category_abbreviation.value)
         if expected is None:
             return self
-        if str(self.evidence_category) != expected:
+        if self.evidence_category.value != expected:
             raise ValueError(
                 "evidence_category_abbreviation must match evidence_category for the row. "
-                f"Expected '{expected}', got '{self.evidence_category}'."
+                f"Expected '{expected}', got '{self.evidence_category.value}'."
             )
         return self

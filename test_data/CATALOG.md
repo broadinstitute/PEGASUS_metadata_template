@@ -8,7 +8,7 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | success | list | success | Example list file with valid headers and rows. |
 | missing_variant_id | list | error | Header validation error: missing `PrimaryVariantID`. |
 | missing_genesymbol | list | error | Header validation error: missing `GeneSymbol`. |
-| invalid_variantid | list | error | invalid `PrimaryVariantID`:chr1:100000:TM:C  |
+| invalid_variantid | list | error | invalid `PrimaryVariantID`:chr1:100000:TM:C; `chr` itself is optional, but alleles and colon separators remain required  |
 | invalid_genesymbol | list | error | Invalidate value in the `GeneSymbol`. e.g. 1.0 |
 | invalid_number_of_int| list | error | More than one "INT_" column |
 | invalid_no_int| list | error | No "INT_" column in the list|
@@ -24,7 +24,7 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | missing_variant_id | matrix | error | Header validation error: missing `PrimaryVariantID`. |
 | missing_geneid | matrix | error | Header validation error: missing `GeneID`. |
 | missing_genesymbol | matrix | error | Header validation error: missing `GeneSymbol`. |
-| invalid_variantid | matrix| error | invalid `PrimaryVariantID`:chr1:100000:TM:C  |
+| invalid_variantid | matrix| error | invalid `PrimaryVariantID`:chr1:100000:TM:C; `chr` itself is optional, but alleles and colon separators remain required  |
 | invalid_rsid | matrix | error | invalid `rsID`:1234 |
 | invalid_genesymbol | matrix | error | Invalidate value in the `GeneSymbol`. e.g. 1.0 |
 | invalid_locusrange | matrix | error | Invalidate value in the `LocusRange`. Z:12345|
@@ -58,4 +58,6 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | success| cross | success| success example - toy data|
 | missing_file | cross | failed | missing list file |
 | missing_column_in_metadata | cross | failed | one column in the matrix is missed in metadata evidence tab |
-| missing_conclusion_column | cross | failed | author conclusion column in the metadata is missing in list file |
+| list_without_conclusion_column | cross | failed | the list must include the metadata-declared author-conclusion column |
+| list_row_with_negative_conclusion | cross | failed | a listed variant-gene pair has no positive author conclusion in the matrix |
+| list_row_with_mismatched_conclusion | cross | failed | the list conclusion does not copy the matching matrix value |

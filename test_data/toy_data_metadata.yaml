@@ -1,8 +1,8 @@
 DatasetDescription:
 - trait_description: type 2 diabetes
   trait_ontology_id: EFO_0800173
-  gwas_source: PMID:36357675
   peg_source: PMID:36357675
+  gwas_source: PMID:36357675
   gwas_samples_description: 6,136 Finnish ancestry individuals
   gwas_sample_size: 6136
   gwas_case_control_study: false
@@ -10,9 +10,9 @@ DatasetDescription:
   gwas_sample_ancestry_label: European
 GenomicIdentifier:
 - variant_type: lead
-  genome_build: GRCh38
   variant_information: The primary variant is the variant with the most significant
     association p-value in the study
+  genome_build: GRCh38
   gene_id_source_version: Ensembl v109
   gene_symbol_source_version: HGNC 2025-07-30
   locus_type: LD
@@ -102,10 +102,10 @@ Evidence:
     sex: mixed
     species: Mus musculus
 Integration:
-- integration_tag: INT_pops
-  column_header: Integrated score based on multiple evidence types for the prioritised
+- integration_tag: pops
+  column_header: INT_pops
+  column_description: Integrated score based on multiple evidence types for the prioritised
     gene
-  column_description: pops
   author_conclusion: false
   evidence_streams_included: FUNC | eQTL | pQTL | FM | 3D | PHEWAS | TWAS
   method_tag: soft_pops
@@ -118,10 +118,10 @@ Integration:
     software_version: v1.0
     software_url: https://github.com/FinucaneLab/pops
     software_doi: 10.1038/s41588-023-01443-6
-- integration_tag: INT_author_score
-  column_header: Combined prediction based on manual review of all evidence types
+- integration_tag: author_score
+  column_header: INT_author_score
+  column_description: Combined prediction based on manual review of all evidence types
     and PoPS output
-  column_description: author_score
   author_conclusion: true
   evidence_streams_included: PROX | REG | LIT | PoPS
   integrations_included: pops

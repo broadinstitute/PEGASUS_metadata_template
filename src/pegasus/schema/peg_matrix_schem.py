@@ -9,8 +9,8 @@ class MatrixIdentifiesPydantic(BaseModel):
     PrimaryVariantID: str = Field(
         ...,
         description="The variant to which variant-centric evidence relates. Used as the primary row ID; may be a lead variant, a variant in LD, or a fine-mapped SNP (defined in metadata).",
-        examples=["chr10:114754071:T:C"],
-        pattern=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
+        examples=["10:114754071:T:C", "chr10:114754071:T:C"],
+        pattern=r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
     )
     rsID: Optional[str] = Field(
         None, 
@@ -27,7 +27,7 @@ class MatrixIdentifiesPydantic(BaseModel):
         ..., 
         description="The gene under consideration in this row. Primary symbol must be the HGNC-approved gene symbol. Alternative/legacy symbols may be provided via GENE_[xyz] (e.g. GENE_alias).", 
         examples=["VTI1A"],
-        pattern = r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$"
+        pattern = r"^[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*$"
         )
     LocusRange: Optional[str] = Field(
         None, 
@@ -35,7 +35,7 @@ class MatrixIdentifiesPydantic(BaseModel):
         examples=["chr10:114700000-114800000"],
         pattern=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*-[1-9]\d*$"
     )
-    Locus_ID: Optional[str] = Field(
+    LocusID: Optional[str] = Field(
         None, 
         description="Internal or curated region ID. Recommended to use the associated variant (chr:bp or rsID); internal IDs may also be “Locus 1, Locus 2”.",
         examples=["chr10:114754071:T:C"]
@@ -45,8 +45,8 @@ class MatrixIdentifiesPydantic(BaseModel):
 class MatrixIdentifiesPandera(pa.SchemaModel):
     PrimaryVariantID: Series[str] = pa.Field(
         nullable=False,
-        str_matches=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
-        description="Expected chr:pos:ref:alt (e.g., chr10:114754071:T:C).",
+        str_matches=r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
+        description="Expected [chr]chromosome:position:REF:ALT (e.g., 10:114754071:T:C or chr10:114754071:T:C).",
     )
     rsID: Series[str] = pa.Field(
         nullable=True,
@@ -56,19 +56,19 @@ class MatrixIdentifiesPandera(pa.SchemaModel):
     GeneID: Series[str] = pa.Field(nullable=False)
     GeneSymbol: Series[str] = pa.Field(
         nullable=False,
-        str_matches=r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$",
+        str_matches=r"^[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*$",
         description=(
             "HGNC gene symbol format. "
-            "Uppercase letters and digits only, may contain internal hyphens, "
-            "must start with a letter (e.g. BRCA1, HLA-DQA1, NKX2-1)."
+            "Letters and digits, with internal hyphens or periods; "
+            "must start with a letter (e.g. BRCA1, C1orf54, RP11-378J18.8)."
         ),
     )
-    LocusRange: Series[str] = pa.Field(
+    LocusRange: Optional[Series[str]] = pa.Field(
         nullable=True,
         str_matches=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*-[1-9]\d*$",
         description="Expected chr#:start-end (e.g., chr10:114700000-114800000).",
     )
-    Locus_ID: Series[str] = pa.Field(nullable=True)
+    LocusID: Optional[Series[str]] = pa.Field(nullable=True)
 
     class Config:
         strict = True

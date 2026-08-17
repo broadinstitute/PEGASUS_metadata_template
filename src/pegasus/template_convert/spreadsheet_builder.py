@@ -8,23 +8,23 @@ import re
 import xlsxwriter
 from pydantic import BaseModel
 
-from pegasus.schema_defintation.peg_metadata_schema.metadata_basic_schema import (
+from pegasus.schema.peg_metadata_schema.metadata_basic_schema import (
     DatasetDescription,
     GenomicIdentifier,
 )
-from pegasus.schema_defintation.core_schema import (
+from pegasus.schema.core import (
     AnyEvidenceCategory,
     GeneEvidenceCategory,
     VariantEvidenceCategory,
 )
-from pegasus.schema_defintation.peg_metadata_schema.metadata_evidence_schema import (
+from pegasus.schema.peg_metadata_schema.metadata_evidence_schema import (
     Evidence,
 )
-from pegasus.schema_defintation.peg_metadata_schema.metadata_method_schema import Method
-from pegasus.schema_defintation.peg_metadata_schema.metadata_integration_schme import (
+from pegasus.schema.peg_metadata_schema.metadata_method_schema import Method
+from pegasus.schema.peg_metadata_schema.metadata_integration_schme import (
     Integration,
 )
-from pegasus.schema_defintation.source_schema import Source
+from pegasus.schema.peg_metadata_schema.metadata_source_schema import Source
 
 def _to_text(x) -> str:
     if x is None:

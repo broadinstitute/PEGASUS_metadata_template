@@ -37,13 +37,15 @@ class PegMatrixValidation:
 
         headers = self.headers
 
-        genetic = [x for x in headers if x in self.matrix_identifier_keys]
+        genetic = list(dict.fromkeys(x for x in headers if x in self.matrix_identifier_keys))
 
         other_id =[x for x in headers if any(x.startswith(prefix) for prefix in self.Other_identifiers)]
 
         int_cols = [x for x in headers if x.startswith("INT_")]
 
-        evidence = [x for x in headers if "_" in x and x.split("_", 1)[0] in self.evidence_category_keys]
+        evidence = [x for x in headers
+                    if x in self.evidence_category_keys
+                    or ("_" in x and x.split("_", 1)[0] in self.evidence_category_keys)]
 
         other = [x for x in headers if x not in genetic + other_id + int_cols + evidence]
     
@@ -59,6 +61,8 @@ class PegMatrixValidation:
         table = etl.fromcsv(self.file_path, delimiter="\t")
         table_fixed = etl.cut(table, fields)
         df = etl.todataframe(table_fixed)
+        str_cols = df.select_dtypes(include="object").columns
+        df[str_cols] = df[str_cols].apply(lambda col: col.str.strip())
         return df
     
     def _collect_row_errors(
@@ -192,7 +196,6 @@ class PegMatrixValidation:
                     "message": f"The following columns are not recognized and will be ignored in validation: {classified_headers['other']}",
                 }
             )
-            return self.errors
         else:
             self.errors.append(
                 {

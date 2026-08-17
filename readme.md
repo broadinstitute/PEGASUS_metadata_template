@@ -31,7 +31,7 @@ It includes:
 - `src/pegasus/validation/`: list/matrix/metadata validation logic
 - `src/pegasus/schema/`: schema definitions and constants
 - `src/pegasus/template_convert/`: Excel/JSON/YAML conversion utilities
-- `templates/peg_template.xlsx`: base template asset
+- `templates/metadata_peg_template.xlsx`: generated metadata template asset
 - `test_data/`: sample files for local testing
 - `tests/`: unit tests
 
@@ -60,31 +60,31 @@ Run commands with either:
 Validate all PEGASUS files in a folder:
 
 ```bash
-poetry run pegasus_tool validate test_data/
+poetry run pegasus_tool validate test_data/toy_data/
 ```
 
 Validate one type only:
 
 ```bash
-poetry run pegasus_tool validate test_data/ --type matrix
+poetry run pegasus_tool validate test_data/toy_data/ --type matrix
 ```
 
 Validate a specific file:
 
 ```bash
-poetry run pegasus_tool validate test_data/list_toydata_PEGSt000000.tsv --type list
+poetry run pegasus_tool validate test_data/toy_data/list_toydata_PEGSt000000.tsv --type list
 ```
 
 JSON output for UI/workflow integration:
 
 ```bash
-poetry run pegasus_tool validate test_data/ --format json
+poetry run pegasus_tool validate test_data/toy_data/ --format json
 ```
 
 Control number of reported errors:
 
 ```bash
-poetry run pegasus_tool validate test_data/ --error-limit 100
+poetry run pegasus_tool validate test_data/toy_data/ --error-limit 100
 ```
 
 ### 2) Convert Metadata Template Formats
@@ -92,13 +92,13 @@ poetry run pegasus_tool validate test_data/ --error-limit 100
 Excel to JSON:
 
 ```bash
-poetry run pegasus_tool convert xlsx-to-json test_data/metadata_peg.xlsx output.json
+poetry run pegasus_tool convert xlsx-to-json test_data/toy_data/metadata_toydata_PEGSt000000.xlsx output.json
 ```
 
 Excel to YAML:
 
 ```bash
-poetry run pegasus_tool convert xlsx-to-yaml test_data/metadata_peg.xlsx output.yaml
+poetry run pegasus_tool convert xlsx-to-yaml test_data/toy_data/metadata_toydata_PEGSt000000.xlsx output.yaml
 ```
 
 Generate Excel template from schema:
@@ -124,6 +124,17 @@ If multiple files of the same type are found in one directory, validation return
 - Metadata validation: per-sheet required columns and cross-sheet consistency rules
 - Cross-validation (directory mode): list/matrix/metadata column alignment checks
 
+### Representing Missing Values in Metadata
+
+For optional fields in the metadata Excel file, missing values can be represented as:
+
+- **Blank cell** (leave empty) — recommended
+- `NA`
+- `N/A`
+- `NONE`
+
+All of the above are treated as absent and will pass validation for any optional field. Do **not** use these strings in required fields, as the field will be treated as empty and fail validation.
+
 Detailed rule notes are documented in:
 
 - `docs/metadata_validation.md`
@@ -132,5 +143,5 @@ Detailed rule notes are documented in:
 ## Run Tests
 
 ```bash
-poetry run pytest
+poetry run python -m unittest discover -s tests
 ```

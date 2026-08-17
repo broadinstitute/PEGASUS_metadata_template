@@ -17,12 +17,12 @@ Header checks:
 - At least **two** evidence columns are required.
 
 Fixed-column checks (Pandera, `MatrixIdentifiesPandera`):
-- `PrimaryVariantID`: required, `chr<1-22|X|Y|M|MT>:pos:REF:ALT` regex.
+- `PrimaryVariantID`: required, optional literal `chr` prefix followed by a required chromosome (`1-22`, `X`, `Y`, `M`, or `MT`), then `:pos:REF:ALT`; colon separators remain mandatory.
 - `rsID`: optional, `rs<digits>` regex.
 - `GeneID`: required (no regex; must be non-null string).
-- `GeneSymbol`: required, must be a real Python `str` and **not purely numeric**.
+- `GeneSymbol`: required and must start with a letter; valid HGNC-style mixed-case symbols, internal hyphens, and periods are accepted (for example `C1orf54` and `RP11-378J18.8`).
 - `LocusRange`: optional, `chr<1-22|X|Y|M|MT>:start-end` regex.
-- `Locus_ID`: optional (no regex).
+- `LocusID`: optional (no regex).
 
 Validation strategy:
 - Fixed columns are validated in chunks (first 50k rows, then remaining).
@@ -38,7 +38,7 @@ Header checks:
 - Unrecognized columns are allowed but reported as warnings and skipped in row validation.
 
 Row checks (Pydantic, `PegListSchema` + `ListIdentifiers`):
-- `PrimaryVariantID`: must match `chr:pos:ref:alt` regex (note: error text mentions rsID, but current validator only accepts chr-formatted IDs).
+- `PrimaryVariantID`: accepts an optional literal `chr` prefix followed by a required chromosome, position, REF, and ALT; both `10:114754071:T:C` and `chr10:114754071:T:C` are valid, while a missing chromosome or mixed separators are invalid.
 - `GeneSymbol`: must be a non-numeric string.
 - Evidence columns: values must parse to **boolean** (`TRUE`/`FALSE` or actual bool).
 - Integration columns: accepted as strings (no strict validation yet).
@@ -59,6 +59,16 @@ DatasetDescription conditional rule:
   - `gwas_sample_ancestry`
   - `gwas_sample_ancestry_label`
 
+Source identifier preference (`peg_source`, `gwas_source`):
+- Both fields end their type union in a bare `str`, so a free-text value is
+  accepted and never blocks a submission.
+- A value that matches none of the structured forms raises a **warning**
+  naming the row, field, value, and the identifiers preferred for that field.
+  `gwas_source` prefers GCST, then PMID / DOI / URL; `peg_source` prefers
+  PMID / DOI / URL.
+- The structured forms are read off each field's own annotation, so adding or
+  removing a union member changes the check with it.
+
 Evidence sheet rules:
 - Prefilled Evidence rows are ignored when `evidence_category` is 0 or 0.0.
 - `evidence_category_abbreviation` must map to `evidence_category` per `EVIDENCE_CATEGORY_MAP`.
@@ -76,12 +86,13 @@ Cross-sheet rules:
 - Cross-checks include:
   - Matrix evidence columns must match the combined Evidence + Integration columns from metadata.
   - Metadata must include an `author_conclusion = TRUE` row.
-  - The metadata conclusion column name must exist in both list and matrix headers.
+  - The metadata conclusion column must exist in both the matrix and the list.
+  - Every list `PrimaryVariantID` + `GeneSymbol` pair must match a matrix row and copy its positive conclusion value. Blank, `NA`, `N/A`, `NONE`, `-`, `FALSE`, `0`, `N`, and `NO` are treated as non-positive.
 
 ## Notes / gaps to address later
 - Metadata validator is wired and enforces per-sheet + cross-sheet rules.
-- Matrix header validation currently stops on any unknown header (warning + early return).
-- PEG list PrimaryVariantID validator only accepts chr:pos:ref:alt even though message mentions rsID.
+- Unknown matrix headers produce warnings and are ignored, while recognized columns continue through row validation.
+- PEG list and matrix PrimaryVariantID validators accept the same colon-delimited format with an optional `chr` prefix.
 
 ## Where the schema lives
 - `src/pegasus/schema/core.py`
