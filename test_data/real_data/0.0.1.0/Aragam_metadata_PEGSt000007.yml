@@ -1,0 +1,378 @@
+DatasetDescription:
+- trait_description: coronary artery disease
+  trait_ontology_id: EFO_0001645
+  peg_source: PMID:36474045
+  gwas_source: 'GCST90132315 '
+GenomicIdentifier:
+- variant_type: significant
+  variant_information: 279 significant associations from GWAS meta-analysis
+  genome_build: ' GRCh37'
+  info: All protein-coding genes within 500 kb of all 279 genome-wide association
+Evidence:
+- column_header: GWAS_Pvalue
+  column_description: The p-value of association between the variant and the trait
+    from GWAS.
+  evidence_category: Genome-wide association (GWAS) signal
+  evidence_category_abbreviation: GWAS
+  variant_or_gene_centric: variant-centric
+- column_header: GWAS_Beta
+  column_description: The effect size estimate from GWAS; indicates the direction
+    and magnitude of the allele’s effect on the trait.
+  evidence_category: Genome-wide association (GWAS) signal
+  evidence_category_abbreviation: GWAS
+  variant_or_gene_centric: variant-centric
+- column_header: FM_PPA
+  column_description: Posterior probability that the variant is causal for the trait
+    based on fine-mapping analysis.
+  evidence_category: Finemapping and credible sets
+  evidence_category_abbreviation: FM
+  variant_or_gene_centric: variant-centric
+- column_header: FM_FGWAS_MostEnrichedTissue
+  column_description: The most significantly enriched tissue identified by functionally
+    informed fine-mapping (FGWAS) for the locus.
+  evidence_category: Finemapping and credible sets
+  evidence_category_abbreviation: FM
+  variant_or_gene_centric: variant-centric
+  method_tag: soft_fgwas
+  method:
+    method_tag: soft_fgwas
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    software_name: fgwas
+    software_url: https://github.com/joepickrell/fgwas
+- column_header: PROX
+  column_description: If the gene is the nearest gene to the CAD sentinel variant.
+  evidence_category: Proximity to gene (distance)
+  evidence_category_abbreviation: PROX
+  variant_or_gene_centric: variant-centric
+  note: "Summary of the tissue-specific enrichment and functionally-informed fine-mapped\
+    \ for the 127 regions enriched in at least one of the ten enriched CAD-relevant\
+    \ tissues. Enrichments showing a >3SD increment in Bayes Factor (BF) are highlighted\
+    \ in red. \nNULLBF = Bayes Factor under the null model; BESTBFJUMP = maximum increment\
+    \ (i.e. enrichment) observed across the ten tissues; PPA = posterior probability\
+    \ of association; HUVEC = human umbilical vein endothelial cells; HSMM = human\
+    \ skeletal muscle myoblasts."
+- column_header: FUNC_VEPConsequence
+  column_description: Functional consequence of the variant predicted by Ensembl VEP.
+    This column includes only protein altering consequence.
+  evidence_category: Predicted functional impact
+  evidence_category_abbreviation: FUNC
+  variant_or_gene_centric: variant-centric
+  method_tag: soft_vep
+  threshold: protein-altering
+  method:
+    method_tag: soft_vep
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    software_name: Ensembl VEP
+    software_version: v96.0
+    software_url: https://www.ensembl.org/info/docs/tools/vep/index.html
+- column_header: QTL_eQTL_GtexPvalue
+  column_description: 'pvalue for the gene in the region has an eQTL in a CAD-relevant
+    tissue from GTEx for which the lead eSNP is in high linkage disequilibrium (LD)
+    (r2 ≥ 0.8) with the CAD sentinel variant '
+  evidence_stream_tag: eQTL
+  evidence_category: Molecular QTL
+  evidence_category_abbreviation: QTL
+  variant_or_gene_centric: variant-centric
+  source_tag: source_eqtl
+  method_tag: soft_eqtl
+  threshold: FDR<5%
+  note: 'eQTL look-ups from CAD-relevant tissues (adipose [subcutaneous, visceral
+    omentum], adrenal gland, artery [aorta, coronary, tibial], liver and whole blood)
+    in GTEx v7. Associations are only shown where the eQTL reached a 5% false-discovery
+    rate threshold and the lead eQTL variant was in high LD (r2≥0.8) with the CAD
+    sentinel variant.  Nominal P values were estimated using a two-tailed t-test.
+
+    eQTL = expression quantitative trait locus.'
+  source:
+    source_tag: source_eqtl
+    provenance: GTEx
+    version: v7
+    url: https://www.gtexportal.org/home/datasets
+    sample_origin: mixed
+    tissue: 'adipose [subcutaneous, visceral omentum], adrenal gland, artery [aorta,
+      coronary,
+
+      tibial], liver and whole blood'
+    cell_type: mixed
+    life_stage: adult
+    sex: mixed
+    species: human
+  method:
+    method_tag: soft_eqtl
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    method_description: 'We cross-referenced the sentinel CAD variants and their proxies
+      (r2≥0.8) with STARNET eQTLs
+
+      reaching a 5% FDR for all tissues. To ensure the CAD association and eQTL are
+      likely to be
+
+      driven by the same causal variant, we retained only those eQTLs where the CAD-associated
+
+      variant and the lead eQTL variant had r2≥0.8 among European ancestry participants
+      from UK
+
+      Biobank. '
+- column_header: QTL_eQTL_GtexSlope
+  column_description: 'slop for the gene in the region has an eQTL in a CAD-relevant
+    tissue from GTEx for which the lead eSNP is in high linkage disequilibrium (LD)
+    (r2 ≥ 0.8) with the CAD sentinel variant '
+  evidence_stream_tag: eQTL
+  evidence_category: Molecular QTL
+  evidence_category_abbreviation: QTL
+  variant_or_gene_centric: variant-centric
+  source_tag: source_eqtl
+  method_tag: soft_eqtl
+  threshold: FDR<5%
+  note: 'eQTL look-ups from CAD-relevant tissues (adipose [subcutaneous, visceral
+    omentum], adrenal gland, artery [aorta, coronary, tibial], liver and whole blood)
+    in GTEx v7. Associations are only shown where the eQTL reached a 5% false-discovery
+    rate threshold and the lead eQTL variant was in high LD (r2≥0.8) with the CAD
+    sentinel variant.  Nominal P values were estimated using a two-tailed t-test.
+
+    eQTL = expression quantitative trait locus.'
+  source:
+    source_tag: source_eqtl
+    provenance: GTEx
+    version: v7
+    url: https://www.gtexportal.org/home/datasets
+    sample_origin: mixed
+    tissue: 'adipose [subcutaneous, visceral omentum], adrenal gland, artery [aorta,
+      coronary,
+
+      tibial], liver and whole blood'
+    cell_type: mixed
+    life_stage: adult
+    sex: mixed
+    species: human
+  method:
+    method_tag: soft_eqtl
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    method_description: 'We cross-referenced the sentinel CAD variants and their proxies
+      (r2≥0.8) with STARNET eQTLs
+
+      reaching a 5% FDR for all tissues. To ensure the CAD association and eQTL are
+      likely to be
+
+      driven by the same causal variant, we retained only those eQTLs where the CAD-associated
+
+      variant and the lead eQTL variant had r2≥0.8 among European ancestry participants
+      from UK
+
+      Biobank. '
+- column_header: QTL_eQTL_GtexTissue
+  column_description: Lists the GTEx tissue(s) where the variant–gene pair shows a
+    statistically significant
+  evidence_stream_tag: eQTL
+  evidence_category: Molecular QTL
+  evidence_category_abbreviation: QTL
+  variant_or_gene_centric: variant-centric
+  source_tag: source_eqtl
+  method_tag: soft_eqtl
+  threshold: FDR<5%
+  note: 'eQTL look-ups from CAD-relevant tissues (adipose [subcutaneous, visceral
+    omentum], adrenal gland, artery [aorta, coronary, tibial], liver and whole blood)
+    in GTEx v7. Associations are only shown where the eQTL reached a 5% false-discovery
+    rate threshold and the lead eQTL variant was in high LD (r2≥0.8) with the CAD
+    sentinel variant.  Nominal P values were estimated using a two-tailed t-test.
+
+    eQTL = expression quantitative trait locus.'
+  source:
+    source_tag: source_eqtl
+    provenance: GTEx
+    version: v7
+    url: https://www.gtexportal.org/home/datasets
+    sample_origin: mixed
+    tissue: 'adipose [subcutaneous, visceral omentum], adrenal gland, artery [aorta,
+      coronary,
+
+      tibial], liver and whole blood'
+    cell_type: mixed
+    life_stage: adult
+    sex: mixed
+    species: human
+  method:
+    method_tag: soft_eqtl
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    method_description: 'We cross-referenced the sentinel CAD variants and their proxies
+      (r2≥0.8) with STARNET eQTLs
+
+      reaching a 5% FDR for all tissues. To ensure the CAD association and eQTL are
+      likely to be
+
+      driven by the same causal variant, we retained only those eQTLs where the CAD-associated
+
+      variant and the lead eQTL variant had r2≥0.8 among European ancestry participants
+      from UK
+
+      Biobank. '
+- column_header: PHEWAS_UKBBDiseases
+  column_description: 'Significant associations with diseases in UK Biobank are listed
+    for each of the 241 conditionally independent genome-wide associations with CAD
+    from the primary meta-analysis.  (+) and (-) denote direction of association with
+    specified disease/trait, as oriented to the CAD risk-increasing allele. '
+  evidence_category: PheWAS (Phenome-Wide Association Study)
+  evidence_category_abbreviation: PHEWAS
+  variant_or_gene_centric: variant-centric
+  source_tag: source_ukbb
+  method_tag: soft_phewas
+  source:
+    source_tag: source_ukbb
+    provenance: UK Biobank
+    doi: https://doi.org/10.1038/s41586-018-0579-z
+    description: 'UK Biobank (UKB) is a prospective study of approximately 500,000
+      individuals comprising
+
+      members of the UK population aged 40-69 collected from multiple sites across
+      the United
+
+      Kingdom from 2006-2010 (14).'
+  method:
+    method_tag: soft_phewas
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+    method_description: 'For disease phenotypes, we performed logistic
+
+      regression adjusted for age, sex, genotyping array, and the first five principal
+      components. An
+
+      association with a disease phenotype was deemed significant at a Bonferroni-corrected
+      threshold
+
+      of p-value<3.4x10-6 (53 diseases x 279 genetic variants). Continuous phenotypes
+      were
+
+      residualized after adjusting for age, sex, genotyping array, and the first five
+      principal components;
+
+      linear regression was performed on residuals following inverse-normal transformation'
+- column_header: GENEBASE_Rare5SKATO
+  column_description: P-value from gene-based association analysis using SKAT-O, aggregating
+    rare variants (MAF≤ 0.05)
+  evidence_category: Gene-based association
+  evidence_category_abbreviation: GENEBASE
+  variant_or_gene_centric: gene-centric
+  method_tag: soft_skato
+  note: '‘NA’ denotes that this gene could not be tested using this mask due to insufficient
+    variants. including Missense, frameshift, stop gain, stop loss, splice site variants
+    which MAF<5%                                                                                        '
+  method:
+    method_tag: soft_skato
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0000203
+- column_header: PERTURB_MousePhenotype
+  column_description: a gene for which a mouse knock-out has a cardiovascular-relevant
+    phenotype
+  evidence_category: Perturbation
+  evidence_category_abbreviation: PERTURB
+  variant_or_gene_centric: gene-centric
+  source_tag: source_pertub_mouse
+  note: List of cardiovascular-relevant mouse phenotypes for gene knockouts of genes
+    in genome-wide significant association regions. Columns describe the gene (including
+    HGNC and Mouse Genome Informatics IDs), the mouse model ID and description, and
+    the mouse phenotyping ID and description. The table is ordered alphabetically
+    by gene name.
+  source:
+    source_tag: source_pertub_mouse
+    provenance: Mouse Genome Informatics database
+    version: 2019
+    url: http://www.informatics.jax.org
+- column_header: PERTURB_MouseModel
+  column_description: Specifies the mouse model or experimental system used to test
+    gene perturbation effects, particularly those leading to cardiovascular-relevant
+    phenotypes.
+  evidence_category: Perturbation
+  evidence_category_abbreviation: PERTURB
+  variant_or_gene_centric: gene-centric
+  source_tag: source_pertub_mouse
+  note: List of cardiovascular-relevant mouse phenotypes for gene knockouts of genes
+    in genome-wide significant association regions. Columns describe the gene (including
+    HGNC and Mouse Genome Informatics IDs), the mouse model ID and description, and
+    the mouse phenotyping ID and description. The table is ordered alphabetically
+    by gene name.
+  source:
+    source_tag: source_pertub_mouse
+    provenance: Mouse Genome Informatics database
+    version: 2019
+    url: http://www.informatics.jax.org
+- column_header: DB_ClinVar
+  column_description: 'List of genes in CAD-associated regions for which pathogenic
+    (or likely pathogenic) variants were found in ClinVar for phenotypes and disorders
+    related to CAD. '
+  evidence_category: Association from curated database
+  evidence_category_abbreviation: DB
+  variant_or_gene_centric: gene-centric
+  source_tag: source_clinvar
+  note: The report disease to the gene in the region harbors a variant that ClinVar
+    classifies as having evidence for being pathogenic for a cardiovascular-relevant
+    monogenic disorder
+  source:
+    source_tag: source_clinvar
+    provenance: 'ClinVar '
+    version: 44008
+    url: https://www.ncbi.nlm.nih.gov/clinvar/
+Integration:
+- integration_tag: pops
+  column_header: INT_pops_score
+  column_description: 'PoPS score for all genes within a 500kb window of each of the
+    279 sentinel genome-wide significant associations with CAD; and the top ten PoPS
+    features contributing to the prioritization of each gene.                  '
+  author_conclusion: false
+  method_tag: soft_pops
+  note: ' gene with highest PoPS score within 500kb of sentinel.              '
+  method:
+    method_tag: soft_pops
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0007674
+    software_name: PoPS
+    software_doi: https://doi.org/10.1101/2020.09.08.20190561
+- integration_tag: pops
+  column_header: INT_pops_feature1
+  column_description: top PoPS features contributing to the prioritisation of each
+    gene.
+  author_conclusion: false
+  method_tag: soft_pops
+  method:
+    method_tag: soft_pops
+    method_mode: software
+    method_mode_ontology_term_id: ECO_0007674
+    software_name: PoPS
+    software_doi: https://doi.org/10.1101/2020.09.08.20190561
+- integration_tag: nsupport
+  column_header: INT_AuthorConclusion
+  column_description: Number of evidence streams supprting the variant-gene pair to
+    the phenotype
+  author_conclusion: true
+  evidence_streams_included: 'PROX | eQTL |
+
+    GENEBASE |
+
+    PERTUB |
+
+    DB'
+  integrations_included: pops
+  method_tag: method_customised
+  method:
+    method_tag: method_customised
+    method_mode: manual
+    method_mode_ontology_term_id: ECO_0007673
+    method_description: 'To systematically prioritize likely causal genes for all
+      279 genome-wide associations, we integrated the following eight of the aforementioned
+      similarity-based or locus-based predictors of causal genes: (1) the top two
+      prioritized genes from PoPS; (2) genes with eQTLs in CAD-relevant tissues from
+      STARNET or GTEx; (3) genes containing protein-altering variants that are in
+      strong LD (r2 ≥ 0.8) with the CAD sentinel variant; (4) genes harboring variants
+      responsible for monogenic disorders of cardiovascular relevance according to
+      ClinVar; (5) genes containing rare coding variants that have been associated
+      with CAD risk in previous WES or array-based studies; (6) genes encoding proteins
+      of causal relevance to CAD per MR studies or that are targets for established
+      cardiovascular drugs; (7) genes that display cardiovascular-relevant phenotypes
+      in knock-out mice from the International Mouse Phenotyping Consortium or Mouse
+      Genome Informatics database; and (8) the nearest gene to the CAD sentinel variant
+      (Fig. 5a). We prioritized the most likely ‘causal gene’ for each association
+      using a consensus-based approach, selecting the gene with the highest, unweighted
+      sum of evidence across all eight predictors.'

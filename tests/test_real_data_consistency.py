@@ -9,7 +9,7 @@ REAL_DATA = ROOT / "test_data" / "real_data"
 MATRIX = REAL_DATA / "matrix_Aragam_PEGSt000007.tsv"
 PEG_LIST = REAL_DATA / "list_Aragam_PEGSt000007.tsv"
 VARIANT_ID_PATTERN = re.compile(
-    r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$"
+    r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$"
 )
 
 
@@ -36,7 +36,7 @@ class TestAragamRealDataConsistency(unittest.TestCase):
             for row in cls.matrix
         }
 
-    def test_primary_variant_ids_use_supported_colon_format(self) -> None:
+    def test_primary_variant_ids_require_chr_prefix_and_colon_format(self) -> None:
         for row in self.matrix + self.peg_list:
             self.assertRegex(row["PrimaryVariantID"], VARIANT_ID_PATTERN)
 

@@ -9,8 +9,8 @@ class MatrixIdentifiesPydantic(BaseModel):
     PrimaryVariantID: str = Field(
         ...,
         description="The variant to which variant-centric evidence relates. Used as the primary row ID; may be a lead variant, a variant in LD, or a fine-mapped SNP (defined in metadata).",
-        examples=["10:114754071:T:C", "chr10:114754071:T:C"],
-        pattern=r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
+        examples=["chr10:114754071:T:C"],
+        pattern=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
     )
     rsID: Optional[str] = Field(
         None, 
@@ -45,8 +45,8 @@ class MatrixIdentifiesPydantic(BaseModel):
 class MatrixIdentifiesPandera(pa.SchemaModel):
     PrimaryVariantID: Series[str] = pa.Field(
         nullable=False,
-        str_matches=r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
-        description="Expected [chr]chromosome:position:REF:ALT (e.g., 10:114754071:T:C or chr10:114754071:T:C).",
+        str_matches=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
+        description="Expected chr<chromosome>:<position>:<REF>:<ALT> (e.g., chr10:114754071:T:C).",
     )
     rsID: Series[str] = pa.Field(
         nullable=True,

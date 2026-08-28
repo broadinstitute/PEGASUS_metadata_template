@@ -62,14 +62,14 @@ class TestMatrixCatalogValidation(unittest.TestCase):
             results = PegMatrixValidation(tsv_path).validate_pegmatrix()
         self.assertFalse(_has_type(results, "error"))
 
-    def test_success_without_chr_prefix(self) -> None:
+    def test_invalid_without_chr_prefix(self) -> None:
         row = BASE_ROW.copy()
         row[BASE_HEADERS.index("PrimaryVariantID")] = "1:100000:A:G"
         content = _build_tsv(BASE_HEADERS, row)
         with tempfile.TemporaryDirectory() as tmp_dir:
             tsv_path = _write_tmp(Path(tmp_dir), "matrix_without_chr.tsv", content)
             results = PegMatrixValidation(tsv_path).validate_pegmatrix()
-        self.assertFalse(_has_type(results, "error"))
+        self.assertTrue(_has_type(results, "error"))
 
     def test_success_with_valid_mixed_case_and_dotted_gene_symbol(self) -> None:
         for symbol in ("C1orf54", "RP11-378J18.8"):

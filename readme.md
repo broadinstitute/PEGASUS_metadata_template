@@ -121,6 +121,7 @@ If multiple files of the same type are found in one directory, validation return
 
 - List validation: required identifiers + evidence/integration header checks + row-level checks
 - Matrix validation: fixed-column and format checks, plus evidence/integration header checks
+- `PrimaryVariantID` format: `chr<chromosome>:<position>:<REF>:<ALT>` (for example, `chr10:114754071:T:C`); the `chr` prefix is required
 - Metadata validation: per-sheet required columns and cross-sheet consistency rules
 - Cross-validation (directory mode): list/matrix/metadata column alignment checks
 
