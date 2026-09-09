@@ -8,7 +8,7 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | success | list | success | Example list file with valid headers and rows. |
 | missing_variant_id | list | error | Header validation error: missing `PrimaryVariantID`. |
 | missing_genesymbol | list | error | Header validation error: missing `GeneSymbol`. |
-| invalid_variantid | list | error | invalid `PrimaryVariantID`:chr1:100000:TM:C; `chr` itself is optional, but alleles and colon separators remain required  |
+| invalid_variantid | list | error | invalid `PrimaryVariantID`:chr1:100000:TM:C; the `chr` prefix, valid alleles, and colon separators are required  |
 | invalid_genesymbol | list | error | Invalidate value in the `GeneSymbol`. e.g. 1.0 |
 | invalid_number_of_int| list | error | More than one "INT_" column |
 | invalid_no_int| list | error | No "INT_" column in the list|
@@ -24,7 +24,7 @@ This catalog lists TSV/XLSX fixtures in `test_data/` and the expected validation
 | missing_variant_id | matrix | error | Header validation error: missing `PrimaryVariantID`. |
 | missing_geneid | matrix | error | Header validation error: missing `GeneID`. |
 | missing_genesymbol | matrix | error | Header validation error: missing `GeneSymbol`. |
-| invalid_variantid | matrix| error | invalid `PrimaryVariantID`:chr1:100000:TM:C; `chr` itself is optional, but alleles and colon separators remain required  |
+| invalid_variantid | matrix| error | invalid `PrimaryVariantID`:chr1:100000:TM:C; the `chr` prefix, valid alleles, and colon separators are required  |
 | invalid_rsid | matrix | error | invalid `rsID`:1234 |
 | invalid_genesymbol | matrix | error | Invalidate value in the `GeneSymbol`. e.g. 1.0 |
 | invalid_locusrange | matrix | error | Invalidate value in the `LocusRange`. Z:12345|

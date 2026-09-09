@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, AliasChoices, StrictBool, Str
 # refernce: # Reference:https://www.union.ai/blog-post/pandera-0-17-adds-support-for-pydantic-v2
 
 VARIANT_ID_PATTERN = re.compile(
-    r"^(?:chr)?(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$"
+    r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$"
 )
 HGNC_SYMBOL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*$")
 
@@ -20,7 +20,7 @@ class ListIdentifiers(BaseModel):
     PrimaryVariantID: str = Field(
         ...,
         description="The variant to which variant-centric evidence relates. Used as the primary row ID; may be a lead variant, a variant in LD, or a fine-mapped SNP (defined in metadata).",
-        examples=["10:114754071:T:C", "chr10:114754071:T:C"],
+        examples=["chr10:114754071:T:C"],
         validation_alias=AliasChoices("primary_variant_id", "PrimaryVariantID", "rsID"),
     )
     GeneSymbol: StrictStr = Field(
@@ -36,8 +36,8 @@ class ListIdentifiers(BaseModel):
         if VARIANT_ID_PATTERN.match(value):
             return value
         raise ValueError(
-            "PrimaryVariantID must be [chr]chromosome:position:REF:ALT "
-            "(e.g., 10:114754071:T:C or chr10:114754071:T:C)"
+            "PrimaryVariantID must be chr<chromosome>:<position>:<REF>:<ALT> "
+            "(e.g., chr10:114754071:T:C)"
         )
 
     @field_validator("GeneSymbol")
