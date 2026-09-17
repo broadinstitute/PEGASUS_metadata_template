@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 import re
-import pandera as pa
+import pandera.pandas as pa
 from pandera.typing import Series
 from pydantic import BaseModel, Field
 
@@ -42,7 +42,7 @@ class MatrixIdentifiesPydantic(BaseModel):
     )
 
 
-class MatrixIdentifiesPandera(pa.SchemaModel):
+class MatrixIdentifiesPandera(pa.DataFrameModel):
     PrimaryVariantID: Series[str] = pa.Field(
         nullable=False,
         str_matches=r"^chr(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT):[1-9]\d*:[ATGC]+:[ATGC]+$",
