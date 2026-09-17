@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import petl as etl
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 import json
 from pathlib import Path
 from typing import List
